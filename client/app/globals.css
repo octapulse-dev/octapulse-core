@@ -253,72 +253,36 @@ body::before {
   background-size: 20px 20px;
 }
 
-/* Enhanced card styling */
-.enhanced-card {
-  @apply bg-gradient-to-br from-slate-900/90 to-slate-800/80 backdrop-blur-xl border border-slate-700/60 rounded-2xl shadow-2xl;
-  @apply relative overflow-hidden;
+/* Professional Dashboard Cards */
+.dashboard-card {
+  @apply bg-white/5 backdrop-blur-sm border border-slate-700/30 rounded-xl shadow-lg;
+  @apply relative overflow-hidden transition-all duration-300;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.03) 0%, rgba(226, 232, 240, 0.02) 100%);
   box-shadow: 
-    0 8px 32px -12px rgba(0, 0, 0, 0.8),
-    0 0 0 1px rgba(148, 163, 184, 0.05),
-    inset 0 1px 0 rgba(148, 163, 184, 0.1);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    0 4px 24px -8px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(148, 163, 184, 0.05);
 }
 
-.enhanced-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.15));
-  border-radius: inherit;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: xor;
-  -webkit-mask-composite: xor;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.4s ease;
+.dashboard-card:hover {
+  @apply border-slate-600/50;
+  box-shadow: 
+    0 8px 32px -8px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(148, 163, 184, 0.08);
+  transform: translateY(-2px);
+}
+
+/* Enhanced card for special sections */
+.enhanced-card {
+  @apply bg-white/5 backdrop-blur-sm border border-slate-700/30 rounded-xl shadow-lg;
+  @apply relative overflow-hidden transition-all duration-300;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.04) 0%, rgba(226, 232, 240, 0.03) 100%);
+  box-shadow: 
+    0 4px 24px -8px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(148, 163, 184, 0.05);
 }
 
 .enhanced-card:hover {
-  @apply border-slate-600/70;
-  box-shadow: 
-    0 16px 64px -12px rgba(0, 0, 0, 0.9),
-    0 0 0 1px rgba(148, 163, 184, 0.1),
-    inset 0 2px 0 rgba(148, 163, 184, 0.15),
-    0 0 30px rgba(14, 165, 233, 0.1);
-  transform: translateY(-4px) scale(1.01);
-}
-
-.enhanced-card:hover::before {
-  opacity: 1;
-}
-
-/* Interactive card elements */
-.enhanced-card::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(45deg, 
-    transparent 30%, 
-    rgba(14, 165, 233, 0.03) 40%, 
-    rgba(16, 185, 129, 0.03) 50%, 
-    rgba(6, 182, 212, 0.03) 60%, 
-    transparent 70%);
-  animation: card-shimmer 6s linear infinite;
-  pointer-events: none;
-  opacity: 0;
-}
-
-.enhanced-card:hover::after {
-  opacity: 1;
-}
-
-@keyframes card-shimmer {
-  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.06) 0%, rgba(226, 232, 240, 0.04) 100%);
 }
 
 /* Sophisticated loading states */
@@ -492,4 +456,116 @@ body::before {
   bottom: -8px;
   left: 50%;
   transform: translateX(-50%);
+}
+
+/* Professional Dashboard Layout */
+.dashboard-header {
+  @apply h-16 bg-white/5 backdrop-blur-md border-b border-slate-700/30;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.02) 0%, rgba(226, 232, 240, 0.01) 100%);
+}
+
+.dashboard-sidebar {
+  @apply w-64 min-h-screen bg-white/5 backdrop-blur-md border-r border-slate-700/30;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.02) 0%, rgba(226, 232, 240, 0.01) 100%);
+}
+
+.dashboard-main {
+  @apply flex-1 bg-transparent;
+}
+
+/* Minimalist Components */
+.minimal-input {
+  @apply w-full px-4 py-3 bg-white/5 border border-slate-700/30 rounded-lg text-white placeholder-slate-400;
+  @apply focus:outline-none focus:border-sky-500/50 focus:ring-0 transition-colors;
+  backdrop-filter: blur(8px);
+}
+
+.minimal-button {
+  @apply px-6 py-3 rounded-lg font-medium transition-all duration-300;
+  @apply bg-white/10 hover:bg-white/20 border border-slate-600/30 hover:border-slate-500/50;
+  @apply text-white hover:text-sky-300;
+  backdrop-filter: blur(8px);
+}
+
+.minimal-button.primary {
+  @apply bg-sky-500/20 hover:bg-sky-500/30 border-sky-500/50 hover:border-sky-400;
+  @apply text-sky-300 hover:text-sky-200;
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.1);
+}
+
+.minimal-button.primary:hover {
+  box-shadow: 0 0 30px rgba(14, 165, 233, 0.2);
+  transform: translateY(-1px);
+}
+
+/* Professional Stats */
+.stat-card {
+  @apply bg-white/5 backdrop-blur-sm border border-slate-700/30 rounded-xl shadow-lg p-6;
+  @apply relative overflow-hidden transition-all duration-300 flex items-center justify-between;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.03) 0%, rgba(226, 232, 240, 0.02) 100%);
+  box-shadow: 
+    0 4px 24px -8px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(148, 163, 184, 0.05);
+}
+
+.stat-value {
+  @apply text-2xl font-bold text-white;
+}
+
+.stat-label {
+  @apply text-sm text-slate-400 uppercase tracking-wide;
+}
+
+.stat-icon {
+  @apply w-12 h-12 rounded-lg flex items-center justify-center;
+  @apply bg-gradient-to-br from-sky-500/20 to-emerald-500/20;
+  @apply text-sky-400;
+}
+
+/* Image Gallery */
+.image-gallery {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
+}
+
+.image-thumbnail {
+  @apply relative rounded-lg overflow-hidden cursor-pointer;
+  @apply hover:scale-105 transition-transform duration-300;
+  aspect-ratio: 16 / 9;
+}
+
+.image-thumbnail img {
+  @apply w-full h-full object-cover;
+}
+
+.image-thumbnail::after {
+  content: '';
+  @apply absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors;
+  @apply flex items-center justify-center;
+}
+
+.image-thumbnail:hover::after {
+  content: '🔍';
+  @apply text-white text-2xl;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  @apply fixed inset-0 bg-black/80 backdrop-blur-sm z-50;
+  @apply flex items-center justify-center p-4;
+}
+
+.modal-content {
+  @apply relative max-w-5xl max-h-full bg-slate-900/90 rounded-xl;
+  @apply border border-slate-700/50 shadow-2xl;
+  backdrop-filter: blur(20px);
+}
+
+.modal-image {
+  @apply max-w-full max-h-[90vh] rounded-lg;
+}
+
+.modal-close {
+  @apply absolute top-4 right-4 w-10 h-10 rounded-full;
+  @apply bg-black/50 hover:bg-black/70 transition-colors;
+  @apply flex items-center justify-center text-white cursor-pointer;
 }

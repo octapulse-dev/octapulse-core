@@ -129,75 +129,73 @@ export default function ImageUpload({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Upload Area */}
-      <Card 
-        className={`border-2 border-dashed transition-all duration-300 ${
+      <div 
+        className={`border-2 border-dashed rounded-xl transition-all duration-300 ${
           isDragActive || dragActive
-            ? 'border-sky-400 bg-sky-500/10 neon-border' 
-            : 'border-slate-600 hover:border-slate-500'
+            ? 'border-sky-400/50 bg-sky-500/10' 
+            : 'border-slate-600/50 hover:border-slate-500/50'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       >
-        <CardContent className="p-8">
+        <div className="p-8">
           <div {...getRootProps()} className="text-center space-y-4">
             <input {...getInputProps()} />
             
-            <div className="mx-auto w-16 h-16 rounded-xl bg-gradient-to-br from-sky-500/20 to-emerald-500/20 flex items-center justify-center backdrop-blur-sm border border-slate-600 pulse-glow">
-              <Upload className="w-8 h-8 text-sky-400" />
+            <div className="mx-auto w-12 h-12 rounded-lg bg-slate-800/50 flex items-center justify-center border border-slate-600/50">
+              <Upload className="w-6 h-6 text-slate-400" />
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xl font-bold text-white tech-mono">
+              <h3 className="text-lg font-medium text-white">
                 {mode === 'single' 
-                  ? 'UPLOAD FISH IMAGE' 
-                  : 'UPLOAD FISH IMAGES'
+                  ? 'Upload Fish Image' 
+                  : 'Upload Fish Images'
                 }
               </h3>
               
-              <p className="text-slate-300 tech-mono">
+              <p className="text-slate-400 text-sm">
                 {isDragActive || dragActive
-                  ? 'DROP YOUR IMAGES HERE...'
-                  : `DRAG AND DROP ${mode === 'single' ? 'AN IMAGE' : 'IMAGES'} HERE, OR CLICK TO BROWSE`
+                  ? 'Drop your images here...'
+                  : `Drag and drop ${mode === 'single' ? 'an image' : 'images'} here, or click to browse`
                 }
               </p>
               
-              <p className="text-sm text-slate-400 tech-mono">
-                SUPPORTS: JPEG, PNG, BMP, TIFF • MAX SIZE: {formatFileSize(maxSize)}
-                {mode === 'batch' && ` • MAX ${maxFiles} FILES`}
+              <p className="text-xs text-slate-500">
+                Supports: JPEG, PNG, BMP, TIFF • Max size: {formatFileSize(maxSize)}
+                {mode === 'batch' && ` • Max ${maxFiles} files`}
               </p>
             </div>
 
             {!disabled && (
-              <Button type="button" variant="outline" className="mt-6 tech-mono font-bold">
-                <FileImage className="w-5 h-5 mr-2" />
-                CHOOSE {mode === 'single' ? 'FILE' : 'FILES'}
-              </Button>
+              <button type="button" className="minimal-button mt-4">
+                <FileImage className="w-4 h-4 mr-2" />
+                Choose {mode === 'single' ? 'File' : 'Files'}
+              </button>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* File List */}
       {files.length > 0 && (
-        <div className="enhanced-card">
+        <div className="bg-white/5 backdrop-blur-sm border border-slate-700/30 rounded-xl shadow-lg relative overflow-hidden transition-all duration-300 hover:border-slate-600/50 hover:translate-y-[-2px]">
           <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h4 className="font-bold text-white tech-mono text-lg">
-                SELECTED FILES ({files.length})
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-medium text-white">
+                Selected Files ({files.length})
               </h4>
               
               {files.length > 1 && (
-                <Button 
+                <button 
                   type="button"
-                  variant="ghost" 
-                  size="sm"
                   onClick={clearAllFiles}
-                  className="text-red-400 hover:text-red-300 tech-mono font-bold"
+                  className="text-red-400 hover:text-red-300 text-sm font-medium transition-colors"
                 >
-                  CLEAR ALL
-                </Button>
+                  Clear All
+                </button>
               )}
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               {files.map((uploadedFile) => (
                 <FilePreview 
                   key={uploadedFile.id}
@@ -223,10 +221,10 @@ function FilePreview({ uploadedFile, onRemove }: FilePreviewProps) {
   const { file, id, preview, error } = uploadedFile;
 
   return (
-    <div className="flex items-center space-x-4 p-4 bg-slate-800/30 border border-slate-700 rounded-xl backdrop-blur-sm hover:bg-slate-700/30 transition-all duration-300">
+    <div className="flex items-center space-x-4 p-3 bg-slate-800/20 border border-slate-700/30 rounded-lg hover:bg-slate-700/20 transition-all duration-200">
       {/* Thumbnail */}
       {preview && (
-        <div className="flex-shrink-0 w-16 h-16 bg-slate-700 rounded-lg overflow-hidden border border-slate-600">
+        <div className="flex-shrink-0 w-12 h-12 bg-slate-700/50 rounded-lg overflow-hidden border border-slate-600/30">
           <img 
             src={preview} 
             alt={file.name}
@@ -240,37 +238,35 @@ function FilePreview({ uploadedFile, onRemove }: FilePreviewProps) {
 
       {/* File Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-white tech-mono truncate">
+        <p className="text-sm font-medium text-white truncate">
           {file.name}
         </p>
         
-        <p className="text-sm text-slate-400 tech-mono">
+        <p className="text-xs text-slate-400">
           {formatFileSize(file.size)}
         </p>
 
         {error && (
           <div className="flex items-center mt-1 text-red-400">
-            <AlertTriangle className="w-4 h-4 mr-1" />
-            <span className="text-xs tech-mono">{error}</span>
+            <AlertTriangle className="w-3 h-3 mr-1" />
+            <span className="text-xs">{error}</span>
           </div>
         )}
       </div>
 
       {/* Status Badge */}
-      <Badge variant={error ? 'destructive' : 'success'}>
-        {error ? 'ERROR' : 'READY'}
+      <Badge variant={error ? 'destructive' : 'success'} className="text-xs">
+        {error ? 'Error' : 'Ready'}
       </Badge>
 
       {/* Remove Button */}
-      <Button
+      <button
         type="button"
-        variant="ghost"
-        size="icon"
         onClick={() => onRemove(id)}
-        className="flex-shrink-0 w-8 h-8 text-slate-400 hover:text-red-400 transition-colors duration-300"
+        className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-slate-400 hover:text-red-400 transition-colors duration-200 rounded"
       >
-        <X className="w-4 h-4" />
-      </Button>
+        <X className="w-3 h-3" />
+      </button>
     </div>
   );
 }
