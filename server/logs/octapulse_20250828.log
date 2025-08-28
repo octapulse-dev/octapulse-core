@@ -135,3 +135,22 @@
 2025-08-28 12:05:57,088 - app.services.fish_measurement - INFO - Analysis completed for uploads/fish_20250828_120553_1a958e08.jpg in 3.25s
 2025-08-28 12:05:57,088 - app.api.v1.endpoints.analysis - INFO - Single image analysis completed: a8173abe-60e4-41ce-9b4f-8aed42b3900e
 2025-08-28 12:05:57,148 - watchfiles.main - INFO - 2 changes detected
+2025-08-28 13:02:49,145 - __main__ - INFO - ======================================================================
+2025-08-28 13:02:49,146 - __main__ - INFO - 🐟 Starting OctaPulse Aquaculture Analysis API Server
+2025-08-28 13:02:49,146 - __main__ - INFO - ======================================================================
+2025-08-28 13:02:49,146 - __main__ - INFO - 📊 Project: OctaPulse Aquaculture Analysis API
+2025-08-28 13:02:49,146 - __main__ - INFO - 🔢 Version: 1.0.0
+2025-08-28 13:02:49,146 - __main__ - INFO - 🤖 Model: /Users/rohansingh/Documents/GitHub/octapulse-core/server/documents/best.pt
+2025-08-28 13:02:49,146 - __main__ - INFO - 📐 Grid Size: 1.0 inches
+2025-08-28 13:02:49,146 - __main__ - INFO - 🌐 CORS Origins: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3003', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3003']
+2025-08-28 13:02:49,146 - __main__ - INFO - ======================================================================
+2025-08-28 13:03:07,898 - app.api.v1.endpoints.upload - INFO - Single image uploaded: fish_20250828_130307_e3b8799e.jpg
+2025-08-28 13:03:07,904 - app.api.v1.endpoints.analysis - INFO - Starting single image analysis: uploads/fish_20250828_130307_e3b8799e.jpg
+2025-08-28 13:03:07,904 - app.services.fish_measurement - INFO - Processing image: uploads/fish_20250828_130307_e3b8799e.jpg
+2025-08-28 13:03:07,966 - watchfiles.main - INFO - 1 change detected
+2025-08-28 13:03:07,999 - app.services.fish_measurement - INFO - Detecting grid squares for calibration...
+2025-08-28 13:03:08,670 - app.services.fish_measurement - INFO - Best detection method: HSV Saturation, found 592 squares
+2025-08-28 13:03:08,672 - app.services.fish_measurement - INFO - Calibration: 126.00 pixels per inch from 592 squares
+2025-08-28 13:03:11,387 - app.services.fish_measurement - INFO - Analysis completed for uploads/fish_20250828_130307_e3b8799e.jpg in 2.78s
+2025-08-28 13:03:11,388 - app.api.v1.endpoints.analysis - INFO - Single image analysis completed: 1fe3e045-fb89-4589-8bae-42c1a4c84c69
+2025-08-28 13:03:11,442 - watchfiles.main - INFO - 2 changes detected

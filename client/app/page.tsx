@@ -365,13 +365,13 @@ export default function Home() {
                           key={type} 
                           className="image-thumbnail"
                           onClick={() => setSelectedImage({
-                            src: `http://localhost:8000/api/v1/analysis/${analysisResult.analysis_id}/visualization/${type}`,
+                            src: `http://localhost:8000/api/v1/analysis/result/${analysisResult.analysis_id}/visualization/${type}`,
                             alt: `${type} visualization`,
                             title: `${type.charAt(0).toUpperCase() + type.slice(1)} Analysis`
                           })}
                         >
                           <img
-                            src={`http://localhost:8000/api/v1/analysis/${analysisResult.analysis_id}/visualization/${type}`}
+                            src={`http://localhost:8000/api/v1/analysis/result/${analysisResult.analysis_id}/visualization/${type}`}
                             alt={`${type} visualization`}
                             className="w-full h-full object-cover"
                           />
