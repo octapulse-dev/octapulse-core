@@ -4,7 +4,8 @@
 
 import type { Metadata } from "next";
 import { Inter, IBM_Plex_Mono } from "next/font/google";
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from "sonner";
+import { ClientProviders } from "@/components/providers/ClientProviders";
 import "./globals.css";
 
 const inter = Inter({
@@ -42,31 +43,15 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${ibmPlexMono.variable} antialiased min-h-screen`}
       >
-        {children}
+        <ClientProviders>
+          {children}
+        </ClientProviders>
 
         {/* Toast Notifications */}
         <Toaster
           position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#374151',
-              color: '#fff',
-              border: '1px solid #6B7280',
-            },
-            success: {
-              style: {
-                background: '#059669',
-                border: '1px solid #10B981',
-              },
-            },
-            error: {
-              style: {
-                background: '#DC2626',
-                border: '1px solid #EF4444',
-              },
-            },
-          }}
+          expand={true}
+          richColors
         />
       </body>
     </html>

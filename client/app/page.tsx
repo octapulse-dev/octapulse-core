@@ -1,24 +1,25 @@
 'use client';
 
+import '@/lib/setup';
 import React, { useState } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
 import HomePage from '@/components/pages/HomePage';
 import PhenotypingPage from '@/components/pages/PhenotypingPage';
+import BatchAnalysisPage from '@/components/pages/BatchAnalysisPage';
 
 export default function Home() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'phenotyping'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'analysis'>('home');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState('phenotyping');
+  const [activeTab, setActiveTab] = useState('single-analysis');
 
   const handleNavigateToPhenotyping = () => {
-    setCurrentPage('phenotyping');
+    setCurrentPage('analysis');
+    setActiveTab('single-analysis');
   };
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    if (tab === 'phenotyping') {
-      setCurrentPage('phenotyping');
-    }
+    setCurrentPage('analysis');
   };
 
   const handleSidebarToggle = () => {
@@ -33,7 +34,7 @@ export default function Home() {
       )}
 
       {/* Show dashboard with sidebar */}
-      {currentPage === 'phenotyping' && (
+      {currentPage === 'analysis' && (
         <div className="flex">
           <Sidebar
             isCollapsed={sidebarCollapsed}
@@ -45,7 +46,8 @@ export default function Home() {
             sidebarCollapsed ? 'ml-16' : 'ml-64'
           }`}>
             <div className="p-8">
-              {activeTab === 'phenotyping' && <PhenotypingPage />}
+              {activeTab === 'single-analysis' && <PhenotypingPage />}
+              {activeTab === 'batch-analysis' && <BatchAnalysisPage />}
             </div>
           </main>
         </div>

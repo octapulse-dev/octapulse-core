@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, Fish } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Fish, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -13,10 +13,16 @@ interface SidebarProps {
 
 const tabs = [
   {
-    id: 'phenotyping',
-    label: 'Phenotyping',
+    id: 'single-analysis',
+    label: 'Single Analysis',
     icon: Fish,
-    description: 'Fish analysis and measurement'
+    description: 'Individual fish analysis'
+  },
+  {
+    id: 'batch-analysis',
+    label: 'Batch Analysis',
+    icon: BarChart3,
+    description: 'Population analysis & stats'
   }
 ];
 

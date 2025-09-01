@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import ImageUpload, { UploadedFile } from '@/components/upload/ImageUpload';
 import AnalysisConfig from '@/components/analysis/AnalysisConfig';
