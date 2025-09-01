@@ -7,23 +7,23 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-lg border px-3 py-1 text-xs font-bold tech-mono tracking-wide transition-all focus:outline-none focus-glow",
+  "inline-flex items-center rounded-lg border px-3 py-1 text-xs font-bold mono-bold tracking-wide transition-all focus:outline-none",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-gradient-to-r from-sky-500/20 to-emerald-500/20 text-sky-400 shadow-lg backdrop-blur-sm hover:from-sky-500/30 hover:to-emerald-500/30",
+          "border-sky-200 bg-sky-50 text-sky-700 shadow-sm hover:bg-sky-100 hover:border-sky-300",
         secondary:
-          "border-slate-600 bg-slate-800/50 text-slate-300 backdrop-blur-sm hover:bg-slate-700/50 hover:border-slate-500",
+          "border-gray-200 bg-gray-50 text-gray-700 shadow-sm hover:bg-gray-100 hover:border-gray-300",
         destructive:
-          "border-transparent bg-gradient-to-r from-red-500/20 to-red-600/20 text-red-400 shadow-lg backdrop-blur-sm hover:from-red-500/30 hover:to-red-600/30",
-        outline: "border-slate-600 text-slate-300 hover:border-slate-500 hover:text-white",
+          "border-red-200 bg-red-50 text-red-700 shadow-sm hover:bg-red-100 hover:border-red-300",
+        outline: "border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50",
         success:
-          "border-transparent bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-400 shadow-lg backdrop-blur-sm hover:from-emerald-500/30 hover:to-green-500/30",
+          "border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm hover:bg-emerald-100 hover:border-emerald-300",
         warning:
-          "border-transparent bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-400 shadow-lg backdrop-blur-sm hover:from-amber-500/30 hover:to-yellow-500/30",
+          "border-amber-200 bg-amber-50 text-amber-700 shadow-sm hover:bg-amber-100 hover:border-amber-300",
         info:
-          "border-transparent bg-gradient-to-r from-cyan-500/20 to-sky-500/20 text-cyan-400 shadow-lg backdrop-blur-sm hover:from-cyan-500/30 hover:to-sky-500/30",
+          "border-cyan-200 bg-cyan-50 text-cyan-700 shadow-sm hover:bg-cyan-100 hover:border-cyan-300",
       },
     },
     defaultVariants: {
