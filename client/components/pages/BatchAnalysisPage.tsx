@@ -59,10 +59,20 @@ export default function BatchAnalysisPage() {
     resetAnalysis
   } = useBatchAnalysis({
     onStageChange: (stage) => {
+      console.log('🔄 Stage changed to:', stage);
       perfMonitor.mark(`stage-${stage}`);
       if (stage === 'completed') {
         perfMonitor.measure('total-analysis-time', 'stage-uploading');
       }
+    },
+    onProgress: (uploadProgress, analysisProgress) => {
+      console.log('📈 Progress update:', { uploadProgress, analysisProgress });
+    },
+    onComplete: (result) => {
+      console.log('✅ Batch analysis completed:', result);
+    },
+    onError: (error) => {
+      console.error('❌ Batch analysis error:', error);
     }
   });
 
@@ -70,9 +80,41 @@ export default function BatchAnalysisPage() {
   const [showPopulationStats, setShowPopulationStats] = useState(true);
 
   // Handle batch analysis with performance monitoring
-  const handleBatchAnalysis = () => {
+  const handleBatchAnalysis = async () => {
+    console.log('🚀 handleBatchAnalysis clicked!', { files: files.length, isProcessing, hasFailed });
+    
+    // Test backend connection first
+    try {
+      console.log('🏥 Testing backend connection...');
+      const { healthCheck } = await import('@/lib/api');
+      const health = await healthCheck();
+      console.log('✅ Backend health check passed:', health);
+    } catch (healthError) {
+      console.error('❌ Backend health check failed:', healthError);
+      // Continue anyway, but warn user
+    }
+    
+    console.log('📊 About to call startBatchAnalysis with:', { 
+      filesLength: files.length, 
+      config,
+      startBatchAnalysisType: typeof startBatchAnalysis,
+      startBatchAnalysisExists: !!startBatchAnalysis
+    });
+    
+    if (typeof startBatchAnalysis !== 'function') {
+      console.error('❌ startBatchAnalysis is not a function!', startBatchAnalysis);
+      return;
+    }
+    
     perfMonitor.mark('stage-uploading');
-    startBatchAnalysis(files, config);
+    
+    try {
+      console.log('🚀 Calling startBatchAnalysis...');
+      await startBatchAnalysis(files, config);
+      console.log('✅ startBatchAnalysis call completed');
+    } catch (error) {
+      console.error('❌ Error in startBatchAnalysis:', error);
+    }
   };
 
   // Handle analysis cancellation
@@ -95,6 +137,20 @@ export default function BatchAnalysisPage() {
         <h1 className="text-3xl font-bold text-gray-900 mono-bold">Batch Fish Population Analysis</h1>
         <p className="text-gray-600 mt-2 sans-clean">
           Upload multiple fish images to get comprehensive population statistics and distribution analysis
+        </p>
+      </div>
+
+      {/* Debug Info - Remove After Testing */}
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+        <h3 className="font-bold text-yellow-800 mb-2">Debug Info (Remove After Testing)</h3>
+        <p className="text-sm text-yellow-700">
+          Files: {files.length} | Processing: {isProcessing.toString()} | Failed: {hasFailed.toString()} | 
+          Stage: {stage} | Can Enable Button: {(files.length >= 2 && !isProcessing).toString()}
+        </p>
+        <p className="text-sm text-yellow-700">
+          Upload Progress: {uploadProgress ? `${uploadProgress.overall_progress}%` : 'null'} | 
+          Analysis Progress: {analysisProgress ? `${analysisProgress.progress_percent}%` : 'null'} |
+          Batch ID: {currentBatchId || 'none'}
         </p>
       </div>
 
@@ -188,18 +244,21 @@ export default function BatchAnalysisPage() {
                     disabled={stage === 'uploading' || stage === 'analyzing'}
                   />
                 </div>
-                <div className="flex items-center justify-center">
-                  <div className="space-y-4">
+                <div className="flex items-center justify-center relative">
+                  <div className="space-y-4 w-full max-w-md">
                     <button
                       onClick={handleBatchAnalysis}
+                      onMouseDown={() => console.log('🔥 Button mouse down')}
+                      onMouseUp={() => console.log('🔥 Button mouse up')}
                       disabled={files.length < 2 || isProcessing}
-                      className={`w-full px-12 py-6 rounded-xl font-bold text-lg transition-all duration-300 mono-bold ${
+                      className={`w-full px-12 py-6 rounded-xl font-bold text-lg transition-all duration-300 mono-bold relative z-10 cursor-pointer ${
                         isProcessing
                           ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                           : hasFailed
                             ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl'
                             : 'bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
                       }`}
+                      style={{ pointerEvents: files.length < 2 || isProcessing ? 'none' : 'auto' }}
                     >
                       {isProcessing ? (
                         <div className="flex items-center justify-center space-x-3">
@@ -219,6 +278,14 @@ export default function BatchAnalysisPage() {
                       )}
                     </button>
                     
+                    {/* Test Button for Click Detection */}
+                    <button
+                      onClick={() => console.log('🧪 Test button clicked!')}
+                      className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
+                    >
+                      Test Click (Remove After Debug)
+                    </button>
+
                     {/* Cancel Button During Processing */}
                     {isProcessing && (
                       <button
@@ -239,16 +306,40 @@ export default function BatchAnalysisPage() {
         )}
 
         {/* Step 3: Upload Progress */}
-        <UploadProgressTracker 
-          progress={uploadProgress!} 
-          isVisible={stage === 'uploading' && uploadProgress !== null} 
-        />
+        {stage === 'uploading' && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <h3 className="text-lg font-semibold mb-4">Upload Progress</h3>
+            {uploadProgress ? (
+              <UploadProgressTracker 
+                progress={uploadProgress} 
+                isVisible={true} 
+              />
+            ) : (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-500 mx-auto"></div>
+                <p className="mt-2 text-gray-600">Preparing upload...</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Step 4: Analysis Progress */}
-        <BatchProgressTracker 
-          progress={analysisProgress!} 
-          isVisible={stage === 'analyzing' && analysisProgress !== null} 
-        />
+        {stage === 'analyzing' && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <h3 className="text-lg font-semibold mb-4">Analysis Progress</h3>
+            {analysisProgress ? (
+              <BatchProgressTracker 
+                progress={analysisProgress} 
+                isVisible={true} 
+              />
+            ) : (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
+                <p className="mt-2 text-gray-600">Starting analysis...</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Step 5: Population Statistics */}
         {batchResult && showPopulationStats && (

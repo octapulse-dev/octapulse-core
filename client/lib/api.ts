@@ -268,6 +268,8 @@ export async function uploadBatchImagesEnhanced(
   onProgress?: (progress: BatchUploadProgress) => void
 ): Promise<BatchUploadResponse> {
   console.log('📤 uploadBatchImagesEnhanced called with', files.length, 'files');
+  console.log('📝 File details:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
+  console.log('⚙️ Config:', config);
   const formData = new FormData();
   const startTime = Date.now();
   let uploadedBytes = 0;
@@ -282,6 +284,7 @@ export async function uploadBatchImagesEnhanced(
   }));
 
   files.forEach((file, index) => {
+    console.log(`📎 Adding file ${index + 1}/${files.length}: ${file.name}`);
     formData.append('files', file);
     fileProgresses[index].status = 'uploading';
   });
@@ -289,10 +292,12 @@ export async function uploadBatchImagesEnhanced(
   formData.append('grid_square_size', config.gridSquareSize.toString());
   formData.append('include_visualizations', config.includeVisualizations.toString());
 
-  const response: AxiosResponse<BatchUploadResponse> = await apiClient.post(
-    '/upload/batch',
-    formData,
-    {
+  console.log('🚀 Sending FormData to /upload/batch...');
+  try {
+    const response: AxiosResponse<BatchUploadResponse> = await apiClient.post(
+      '/upload/batch',
+      formData,
+      {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -318,7 +323,18 @@ export async function uploadBatchImagesEnhanced(
     }
   );
 
+  console.log('✅ Upload successful:', response.data);
   return response.data;
+  
+  } catch (error: any) {
+    console.error('❌ Upload failed:', {
+      error,
+      message: error?.message,
+      status: error?.response?.status,
+      data: error?.response?.data
+    });
+    throw error;
+  }
 }
 
 /**
@@ -409,20 +425,25 @@ export async function uploadAndAnalyzeBatchEnhanced(
   onAnalysisProgress?: (progress: AnalysisProgress) => void
 ): Promise<ComprehensiveBatchResult> {
   try {
+    console.log('🔄 Phase 1: Starting batch upload...', files.length, 'files');
     // Phase 1: Upload with detailed progress
     const uploadResult = await uploadBatchImagesEnhanced(files, config, onUploadProgress);
+    console.log('✅ Phase 1 complete: Upload result:', uploadResult);
     
     if (!uploadResult.batch_id) {
       throw new Error('Batch upload failed - no batch ID returned');
     }
     
+    console.log('🔄 Phase 2: Starting batch analysis...');
     // Phase 2: Start analysis
-    await startBatchAnalysis(
+    const analysisStartResult = await startBatchAnalysis(
       uploadResult.uploaded_files.map(f => f.file_path),
       config,
       uploadResult.batch_id  // Pass the batch_id from upload
     );
+    console.log('✅ Phase 2 complete: Analysis started:', analysisStartResult);
     
+    console.log('🔄 Phase 3: Starting progress monitoring...');
     // Phase 3: Monitor analysis progress
     let attempts = 0;
     const maxAttempts = 600; // 10 minutes max for large batches
@@ -430,7 +451,9 @@ export async function uploadAndAnalyzeBatchEnhanced(
     while (attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
       
+      console.log(`📊 Checking progress attempt ${attempts + 1}/${maxAttempts}...`);
       const progress = await getBatchAnalysisProgress(uploadResult.batch_id);
+      console.log('📈 Progress update:', progress);
       onAnalysisProgress?.(progress);
       
       if (progress.status === 'completed' || progress.status === 'failed') {

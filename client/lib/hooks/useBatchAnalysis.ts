@@ -83,7 +83,12 @@ export function useBatchAnalysis(options: UseBatchAnalysisOptions = {}) {
     files: UploadedFile[],
     config: AnalysisConfig
   ) => {
-    if (!isComponentMountedRef.current) return;
+    console.log('🎯 startBatchAnalysis called!', { mounted: isComponentMountedRef.current, filesCount: files.length });
+    
+    if (!isComponentMountedRef.current) {
+      console.warn('⚠️ Component not mounted, aborting batch analysis');
+      return;
+    }
 
     console.log('🚀 Starting batch analysis with', files.length, 'files');
 
@@ -111,7 +116,11 @@ export function useBatchAnalysis(options: UseBatchAnalysisOptions = {}) {
     abortControllerRef.current = new AbortController();
 
     try {
-      console.log('📤 Starting upload and analysis...');
+      console.log('📤 Starting upload and analysis...', {
+        filesCount: files.length,
+        config,
+        stage
+      });
       const result = await uploadAndAnalyzeBatchEnhanced(
         files.map(f => f.file),
         config,
@@ -158,7 +167,13 @@ export function useBatchAnalysis(options: UseBatchAnalysisOptions = {}) {
     } catch (error: any) {
       if (!isComponentMountedRef.current) return;
 
-      console.error('Batch analysis error:', error);
+      console.error('❌ Batch analysis error details:', {
+        error,
+        message: error?.message,
+        status: error?.status_code,
+        detail: error?.detail,
+        response: error?.response?.data
+      });
       
       // Check if it's an abort error
       if (error.name === 'AbortError') {
