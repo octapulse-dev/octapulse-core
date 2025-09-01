@@ -85,6 +85,8 @@ export function useBatchAnalysis(options: UseBatchAnalysisOptions = {}) {
   ) => {
     if (!isComponentMountedRef.current) return;
 
+    console.log('🚀 Starting batch analysis with', files.length, 'files');
+
     // Validation
     if (files.length === 0) {
       toast.error('Please upload at least one image');
@@ -109,18 +111,22 @@ export function useBatchAnalysis(options: UseBatchAnalysisOptions = {}) {
     abortControllerRef.current = new AbortController();
 
     try {
+      console.log('📤 Starting upload and analysis...');
       const result = await uploadAndAnalyzeBatchEnhanced(
         files.map(f => f.file),
         config,
         (progress) => {
           if (!isComponentMountedRef.current) return;
+          console.log('📊 Upload progress:', progress.overall_progress + '%');
           updateProgress(progress, null);
           if (progress.overall_progress >= 100) {
+            console.log('✅ Upload completed, starting analysis...');
             updateStage('analyzing');
           }
         },
         (progress) => {
           if (!isComponentMountedRef.current) return;
+          console.log('🔬 Analysis progress:', progress.progress_percent + '%');
           updateProgress(null, progress);
           setCurrentBatchId(progress.batch_id);
         }

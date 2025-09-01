@@ -4,7 +4,7 @@ Fish analysis endpoints
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import logging
 from pathlib import Path
 import uuid
@@ -14,9 +14,14 @@ import asyncio
 from app.core.config import settings
 from app.models.fish_analysis import (
     FishAnalysisResult, BatchAnalysisResult, AnalysisRequest, 
-    BatchAnalysisRequest, AnalysisStatus
+    BatchAnalysisRequest, AnalysisStatus, PopulationStatistics,
+    BatchAnalysisResultEnhanced, PaginatedResults, BatchResultsQuery,
+    ComprehensiveBatchResult, AnalysisProgress, BatchUploadResponse,
+    QualityMetrics, SizeClassification, PopulationDistribution,
+    PopulationCorrelation, PopulationInsight
 )
 from app.services.fish_measurement import fish_measurement_service
+from app.services.population_analysis import population_analysis_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -77,7 +82,8 @@ async def start_batch_analysis(
         Batch analysis initiation response
     """
     try:
-        batch_id = str(uuid.uuid4())
+        # Use provided batch_id from request or generate new one
+        batch_id = request.batch_id or str(uuid.uuid4())
         
         # Validate all image paths exist
         valid_images = []
@@ -287,6 +293,332 @@ async def cancel_batch_analysis(batch_id: str):
         logger.error(f"Error cancelling batch analysis: {str(e)}")
         raise HTTPException(status_code=500, detail="Error cancelling batch analysis")
 
+@router.get("/batch/{batch_id}/population-stats", response_model=PopulationStatistics)
+async def get_population_statistics(batch_id: str):
+    """
+    Get population statistics for a completed batch analysis
+    
+    Args:
+        batch_id: Batch analysis ID
+        
+    Returns:
+        Population statistics and insights
+    """
+    try:
+        if batch_id not in batch_analysis_status:
+            raise HTTPException(status_code=404, detail="Batch analysis not found")
+        
+        batch_info = batch_analysis_status[batch_id]
+        
+        if batch_info["status"] != AnalysisStatus.COMPLETED:
+            raise HTTPException(
+                status_code=400, 
+                detail="Batch analysis must be completed to generate population statistics"
+            )
+        
+        # Get the fish analysis results
+        results = batch_info["results"]
+        if not results:
+            raise HTTPException(status_code=400, detail="No analysis results found")
+        
+        # Perform population analysis
+        pop_stats = population_analysis_service.analyze_population(results)
+        
+        # Convert to Pydantic models
+        distributions = [PopulationDistribution(**dist) for dist in pop_stats["distributions"]]
+        correlations = [PopulationCorrelation(**corr) for corr in pop_stats["correlations"]]
+        insights = [PopulationInsight(**insight) for insight in pop_stats["insights"]]
+        
+        size_classification = {
+            key: SizeClassification(**value) 
+            for key, value in pop_stats["size_classification"].items()
+        }
+        
+        quality_metrics = QualityMetrics(**pop_stats["quality_metrics"])
+        
+        population_statistics = PopulationStatistics(
+            total_fish=pop_stats["total_fish"],
+            successful_analyses=pop_stats["successful_analyses"],
+            failed_analyses=pop_stats["failed_analyses"],
+            processing_time_total=pop_stats["processing_time_total"],
+            processing_time_average=pop_stats["processing_time_average"],
+            distributions=distributions,
+            correlations=correlations,
+            insights=insights,
+            size_classification=size_classification,
+            quality_metrics=quality_metrics
+        )
+        
+        return population_statistics
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating population statistics: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error generating population statistics")
+
+@router.get("/batch/{batch_id}/results/paginated")
+async def get_batch_results_paginated(
+    batch_id: str,
+    page: int = 1,
+    per_page: int = 12,
+    status_filter: Optional[str] = None,
+    sort_by: str = "created_at",
+    sort_order: str = "desc",
+    search: Optional[str] = None
+):
+    """
+    Get paginated batch analysis results with filtering and sorting
+    
+    Args:
+        batch_id: Batch analysis ID
+        page: Page number (1-based)
+        per_page: Items per page
+        status_filter: Filter by analysis status
+        sort_by: Sort field
+        sort_order: Sort direction (asc/desc)
+        search: Search term
+        
+    Returns:
+        Paginated results with metadata
+    """
+    try:
+        if batch_id not in batch_analysis_status:
+            raise HTTPException(status_code=404, detail="Batch analysis not found")
+        
+        batch_info = batch_analysis_status[batch_id]
+        all_results = batch_info["results"]
+        
+        # Filter results
+        filtered_results = all_results
+        
+        if status_filter:
+            filtered_results = [r for r in filtered_results if r.status.value == status_filter]
+        
+        if search:
+            search_lower = search.lower()
+            filtered_results = [
+                r for r in filtered_results 
+                if search_lower in r.image_path.lower() or search_lower in r.analysis_id.lower()
+            ]
+        
+        # Sort results
+        reverse = sort_order == "desc"
+        if sort_by == "created_at":
+            filtered_results.sort(key=lambda x: x.processing_metadata.processed_at, reverse=reverse)
+        elif sort_by == "processing_time":
+            filtered_results.sort(key=lambda x: x.processing_metadata.processing_time_seconds, reverse=reverse)
+        elif sort_by == "confidence":
+            filtered_results.sort(
+                key=lambda x: (
+                    sum(d.confidence for d in x.detailed_detections) / len(x.detailed_detections)
+                    if x.detailed_detections else 0
+                ), 
+                reverse=reverse
+            )
+        
+        # Paginate
+        total_items = len(filtered_results)
+        total_pages = max(1, (total_items + per_page - 1) // per_page)
+        page = max(1, min(page, total_pages))
+        
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        page_results = filtered_results[start_idx:end_idx]
+        
+        # Create pagination metadata
+        pagination_meta = {
+            "total_items": total_items,
+            "items_per_page": per_page,
+            "current_page": page,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_previous": page > 1,
+            "next_page": page + 1 if page < total_pages else None,
+            "previous_page": page - 1 if page > 1 else None
+        }
+        
+        return {
+            "items": page_results,
+            "pagination": pagination_meta
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting paginated results: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error retrieving paginated results")
+
+@router.get("/batch/{batch_id}/progress", response_model=AnalysisProgress)
+async def get_batch_analysis_progress(batch_id: str):
+    """
+    Get enhanced batch analysis progress with detailed metrics
+    
+    Args:
+        batch_id: Batch analysis ID
+        
+    Returns:
+        Enhanced progress information
+    """
+    try:
+        if batch_id not in batch_analysis_status:
+            raise HTTPException(status_code=404, detail="Batch analysis not found")
+        
+        batch_info = batch_analysis_status[batch_id]
+        
+        # Calculate progress
+        progress_percent = 0
+        if batch_info["total_images"] > 0:
+            progress_percent = (batch_info["completed_images"] / batch_info["total_images"]) * 100
+        
+        # Calculate processing rate
+        processing_rate = None
+        if batch_info.get("started_at") and batch_info["completed_images"] > 0:
+            elapsed_time = (datetime.utcnow() - batch_info["started_at"]).total_seconds() / 60  # minutes
+            if elapsed_time > 0:
+                processing_rate = batch_info["completed_images"] / elapsed_time
+        
+        # Calculate average processing time
+        average_processing_time = None
+        if batch_info["results"]:
+            processing_times = [r.processing_metadata.processing_time_seconds for r in batch_info["results"]]
+            average_processing_time = sum(processing_times) / len(processing_times)
+        
+        # Estimate completion time
+        estimated_completion_time = None
+        if (processing_rate and processing_rate > 0 and 
+            batch_info["status"] == AnalysisStatus.PROCESSING):
+            remaining_images = batch_info["total_images"] - batch_info["completed_images"]
+            remaining_minutes = remaining_images / processing_rate
+            estimated_completion = datetime.utcnow().timestamp() + (remaining_minutes * 60)
+            estimated_completion_time = datetime.fromtimestamp(estimated_completion).isoformat()
+        
+        return AnalysisProgress(
+            batch_id=batch_id,
+            status=batch_info["status"],
+            total_images=batch_info["total_images"],
+            completed_images=batch_info["completed_images"],
+            failed_images=batch_info["failed_images"],
+            current_image=batch_info.get("current_image"),
+            progress_percent=round(progress_percent, 1),
+            estimated_completion_time=estimated_completion_time,
+            processing_rate=processing_rate,
+            average_processing_time=average_processing_time
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting batch progress: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error retrieving batch progress")
+
+@router.get("/batch/{batch_id}/comprehensive", response_model=ComprehensiveBatchResult)
+async def get_comprehensive_batch_results(batch_id: str):
+    """
+    Get comprehensive batch results with population analysis and paginated results
+    
+    Args:
+        batch_id: Batch analysis ID
+        
+    Returns:
+        Complete batch analysis with population statistics
+    """
+    try:
+        # Get basic batch results
+        batch_info = batch_analysis_status[batch_id]
+        if batch_info["status"] != AnalysisStatus.COMPLETED:
+            raise HTTPException(status_code=400, detail="Batch analysis not completed")
+        
+        # Get population statistics
+        pop_stats = await get_population_statistics(batch_id)
+        
+        # Get first page of results
+        paginated_results = await get_batch_results_paginated(batch_id, page=1, per_page=12)
+        
+        # Create enhanced batch result
+        enhanced_batch = BatchAnalysisResultEnhanced(
+            batch_id=batch_id,
+            status=batch_info["status"],
+            total_images=batch_info["total_images"],
+            completed_images=batch_info["completed_images"],
+            failed_images=batch_info["failed_images"],
+            results=batch_info["results"],
+            processing_metadata={
+                "processing_time_seconds": batch_info.get("total_processing_time", 0),
+                "model_version": "yolov8",
+                "api_version": settings.VERSION,
+                "processed_at": batch_info["started_at"]
+            },
+            population_statistics=pop_stats,
+            visualization_urls={
+                "distributions": [],  # TODO: Generate visualization URLs
+                "correlations": [],
+                "population_overview": "",
+                "size_classification": ""
+            }
+        )
+        
+        # Create download URLs
+        download_urls = {
+            "full_dataset_csv": f"/api/v1/analysis/batch/{batch_id}/download/csv",
+            "population_report_pdf": f"/api/v1/analysis/batch/{batch_id}/download/pdf",
+            "all_visualizations_zip": f"/api/v1/analysis/batch/{batch_id}/download/zip",
+            "individual_results_json": f"/api/v1/analysis/batch/{batch_id}/download/json"
+        }
+        
+        return ComprehensiveBatchResult(
+            batch_analysis=enhanced_batch,
+            paginated_results=paginated_results,
+            download_urls=download_urls
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting comprehensive batch results: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error retrieving comprehensive results")
+
+@router.get("/batch/{batch_id}/download/{format}")
+async def download_batch_results(batch_id: str, format: str):
+    """
+    Download batch results in various formats
+    
+    Args:
+        batch_id: Batch analysis ID
+        format: Export format (csv, json, pdf, zip)
+        
+    Returns:
+        File download response
+    """
+    try:
+        if format not in ['csv', 'json', 'pdf', 'zip']:
+            raise HTTPException(status_code=400, detail="Invalid format. Use: csv, json, pdf, zip")
+        
+        if batch_id not in batch_analysis_status:
+            raise HTTPException(status_code=404, detail="Batch analysis not found")
+        
+        batch_info = batch_analysis_status[batch_id]
+        if batch_info["status"] != AnalysisStatus.COMPLETED:
+            raise HTTPException(status_code=400, detail="Batch analysis not completed")
+        
+        # For now, return a simple response
+        # TODO: Implement actual file generation and download
+        return JSONResponse(
+            content={
+                "message": f"Download would be generated for format: {format}",
+                "batch_id": batch_id,
+                "format": format,
+                "note": "File generation not yet implemented"
+            },
+            status_code=501  # Not Implemented
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error downloading batch results: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error generating download")
+
 async def _process_batch_images(
     batch_id: str, 
     image_paths: List[str],
@@ -316,6 +648,9 @@ async def _process_batch_images(
                     logger.info(f"Batch {batch_id} was cancelled, stopping processing")
                     break
                 
+                # Update current image being processed
+                batch_info["current_image"] = image_path
+                
                 logger.info(f"Processing batch image {i+1}/{len(image_paths)}: {image_path}")
                 
                 result = await fish_measurement_service.process_image(
@@ -332,6 +667,9 @@ async def _process_batch_images(
             except Exception as e:
                 logger.error(f"Error processing batch image {image_path}: {str(e)}")
                 batch_info["failed_images"] += 1
+        
+        # Clear current image
+        batch_info["current_image"] = None
         
         # Finalize batch
         total_time = (datetime.now() - start_time).total_seconds()

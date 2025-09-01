@@ -74,3 +74,53 @@
 2025-09-01 14:42:07,078 - app.services.fish_measurement - INFO - Analysis completed for uploads/fish_20250901_144203_fefcb47c.jpg in 2.55s
 2025-09-01 14:42:07,080 - app.api.v1.endpoints.analysis - INFO - Single image analysis completed: cfdf3348-1705-4cd4-ad24-e4dbc0ed1a6c
 2025-09-01 14:42:07,132 - watchfiles.main - INFO - 2 changes detected
+2025-09-01 14:47:56,566 - __main__ - INFO - ======================================================================
+2025-09-01 14:47:56,567 - __main__ - INFO - 🐟 Starting OctaPulse Aquaculture Analysis API Server
+2025-09-01 14:47:56,567 - __main__ - INFO - ======================================================================
+2025-09-01 14:47:56,567 - __main__ - INFO - 📊 Project: OctaPulse Aquaculture Analysis API
+2025-09-01 14:47:56,567 - __main__ - INFO - 🔢 Version: 1.0.0
+2025-09-01 14:47:56,568 - __main__ - INFO - 🤖 Model: /Users/rohansingh/Documents/GitHub/octapulse-core/server/documents/best.pt
+2025-09-01 14:47:56,568 - __main__ - INFO - 📐 Grid Size: 1.0 inches
+2025-09-01 14:47:56,568 - __main__ - INFO - 🌐 CORS Origins: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3003', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3003']
+2025-09-01 14:47:56,568 - __main__ - INFO - ======================================================================
+2025-09-01 15:14:06,323 - __main__ - INFO - ======================================================================
+2025-09-01 15:14:06,323 - __main__ - INFO - 🐟 Starting OctaPulse Aquaculture Analysis API Server
+2025-09-01 15:14:06,323 - __main__ - INFO - ======================================================================
+2025-09-01 15:14:06,323 - __main__ - INFO - 📊 Project: OctaPulse Aquaculture Analysis API
+2025-09-01 15:14:06,323 - __main__ - INFO - 🔢 Version: 1.0.0
+2025-09-01 15:14:06,323 - __main__ - INFO - 🤖 Model: /Users/rohansingh/Documents/GitHub/octapulse-core/server/documents/best.pt
+2025-09-01 15:14:06,323 - __main__ - INFO - 📐 Grid Size: 1.0 inches
+2025-09-01 15:14:06,323 - __main__ - INFO - 🌐 CORS Origins: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3003', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3003']
+2025-09-01 15:14:06,323 - __main__ - INFO - ======================================================================
+2025-09-01 15:17:19,071 - __main__ - INFO - ======================================================================
+2025-09-01 15:17:19,071 - __main__ - INFO - 🐟 Starting OctaPulse Aquaculture Analysis API Server
+2025-09-01 15:17:19,071 - __main__ - INFO - ======================================================================
+2025-09-01 15:17:19,071 - __main__ - INFO - 📊 Project: OctaPulse Aquaculture Analysis API
+2025-09-01 15:17:19,071 - __main__ - INFO - 🔢 Version: 1.0.0
+2025-09-01 15:17:19,071 - __main__ - INFO - 🤖 Model: /Users/rohansingh/Documents/GitHub/octapulse-core/server/documents/best.pt
+2025-09-01 15:17:19,071 - __main__ - INFO - 📐 Grid Size: 1.0 inches
+2025-09-01 15:17:19,071 - __main__ - INFO - 🌐 CORS Origins: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3003', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3003']
+2025-09-01 15:17:19,071 - __main__ - INFO - ======================================================================
+2025-09-01 15:20:54,040 - watchfiles.main - INFO - 3 changes detected
+2025-09-01 15:20:54,608 - watchfiles.main - INFO - 3 changes detected
+2025-09-01 15:20:58,995 - watchfiles.main - INFO - 3 changes detected
+2025-09-01 15:20:59,507 - watchfiles.main - INFO - 3 changes detected
+2025-09-01 15:21:57,701 - __main__ - INFO - ======================================================================
+2025-09-01 15:21:57,701 - __main__ - INFO - 🐟 Starting OctaPulse Aquaculture Analysis API Server
+2025-09-01 15:21:57,701 - __main__ - INFO - ======================================================================
+2025-09-01 15:21:57,701 - __main__ - INFO - 📊 Project: OctaPulse Aquaculture Analysis API
+2025-09-01 15:21:57,701 - __main__ - INFO - 🔢 Version: 1.0.0
+2025-09-01 15:21:57,701 - __main__ - INFO - 🤖 Model: /Users/rohansingh/Documents/GitHub/octapulse-core/server/documents/best.pt
+2025-09-01 15:21:57,701 - __main__ - INFO - 📐 Grid Size: 1.0 inches
+2025-09-01 15:21:57,701 - __main__ - INFO - 🌐 CORS Origins: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3003', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3003']
+2025-09-01 15:21:57,701 - __main__ - INFO - ======================================================================
+2025-09-01 15:23:44,041 - app.api.v1.endpoints.upload - INFO - Single image uploaded: fish_20250901_152344_31482724.jpg
+2025-09-01 15:23:44,047 - app.api.v1.endpoints.analysis - INFO - Starting single image analysis: uploads/fish_20250901_152344_31482724.jpg
+2025-09-01 15:23:44,047 - app.services.fish_measurement - INFO - Processing image: uploads/fish_20250901_152344_31482724.jpg
+2025-09-01 15:23:44,126 - watchfiles.main - INFO - 1 change detected
+2025-09-01 15:23:44,129 - app.services.fish_measurement - INFO - Detecting grid squares for calibration...
+2025-09-01 15:23:44,731 - app.services.fish_measurement - INFO - Best detection method: HSV Saturation, found 562 squares
+2025-09-01 15:23:44,733 - app.services.fish_measurement - INFO - Calibration: 124.50 pixels per inch from 562 squares
+2025-09-01 15:23:47,072 - app.services.fish_measurement - INFO - Analysis completed for uploads/fish_20250901_152344_31482724.jpg in 2.45s
+2025-09-01 15:23:47,074 - app.api.v1.endpoints.analysis - INFO - Single image analysis completed: f9038682-b976-4f9d-9f81-2e40ee412e0a
+2025-09-01 15:23:47,097 - watchfiles.main - INFO - 2 changes detected

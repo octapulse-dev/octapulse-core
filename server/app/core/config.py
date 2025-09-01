@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     
     # Processing settings
     MAX_BATCH_SIZE: int = Field(
-        default=10,
+        default=100,
         description="Maximum number of images in a batch"
     )
     

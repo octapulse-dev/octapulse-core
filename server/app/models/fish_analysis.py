@@ -137,9 +137,10 @@ class FishAnalysisResult(BaseModel):
 
 class BatchAnalysisRequest(BaseModel):
     """Batch analysis request"""
-    images: List[str] = Field(..., min_length=1, max_length=10)
+    images: List[str] = Field(..., min_length=1, max_length=100)
     grid_square_size_inches: float = Field(default=1.0, gt=0)
     include_visualizations: bool = Field(default=True)
+    batch_id: Optional[str] = None  # Optional batch_id from upload
     
 class BatchAnalysisResult(BaseModel):
     """Batch analysis result"""
@@ -159,3 +160,121 @@ class AnalysisRequest(BaseModel):
     include_visualizations: bool = Field(default=True)
     include_color_analysis: bool = Field(default=True)
     include_lateral_line_analysis: bool = Field(default=True)
+
+# Population Analysis Models
+class PopulationDistribution(BaseModel):
+    """Statistical distribution for a measurement"""
+    measurement_name: str
+    mean: float
+    median: float
+    std_dev: float
+    min_value: float
+    max_value: float
+    q25: float
+    q75: float
+    skewness: float
+    kurtosis: float
+    sample_size: int
+
+class PopulationCorrelation(BaseModel):
+    """Correlation between two measurements"""
+    measurement1: str
+    measurement2: str
+    correlation_coefficient: float
+    p_value: float
+    relationship_strength: str  # 'very_weak', 'weak', 'moderate', 'strong', 'very_strong'
+
+class PopulationInsight(BaseModel):
+    """Statistical insight about the population"""
+    category: str  # 'distribution', 'correlation', 'outlier', 'trend', 'comparison'
+    title: str
+    insight: str
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    data_points: int
+    statistical_significance: Optional[float] = None
+
+class SizeClassification(BaseModel):
+    """Size category information"""
+    count: int
+    percentage: float
+    range: List[float] = Field(..., min_length=2, max_length=2)
+
+class QualityMetrics(BaseModel):
+    """Analysis quality metrics"""
+    high_confidence: int
+    medium_confidence: int
+    low_confidence: int
+    average_detection_confidence: float
+
+class PopulationStatistics(BaseModel):
+    """Complete population analysis statistics"""
+    total_fish: int
+    successful_analyses: int
+    failed_analyses: int
+    processing_time_total: float
+    processing_time_average: float
+    distributions: List[PopulationDistribution]
+    correlations: List[PopulationCorrelation]
+    insights: List[PopulationInsight]
+    size_classification: Dict[str, SizeClassification]  # small, medium, large
+    quality_metrics: QualityMetrics
+
+class BatchAnalysisResultEnhanced(BatchAnalysisResult):
+    """Enhanced batch analysis result with population statistics"""
+    population_statistics: PopulationStatistics
+    visualization_urls: Dict[str, List[str]] = Field(default_factory=dict)
+
+class PaginationMeta(BaseModel):
+    """Pagination metadata"""
+    total_items: int
+    items_per_page: int
+    current_page: int
+    total_pages: int
+    has_next: bool
+    has_previous: bool
+    next_page: Optional[int] = None
+    previous_page: Optional[int] = None
+
+class PaginatedResults(BaseModel):
+    """Paginated results wrapper"""
+    items: List[FishAnalysisResult]
+    pagination: PaginationMeta
+
+class BatchResultsQuery(BaseModel):
+    """Query parameters for batch results"""
+    page: int = Field(default=1, ge=1)
+    per_page: int = Field(default=12, ge=1, le=100)
+    status_filter: Optional[AnalysisStatus] = None
+    sort_by: str = Field(default="created_at")
+    sort_order: str = Field(default="desc")
+    search: Optional[str] = None
+
+class AnalysisProgress(BaseModel):
+    """Enhanced analysis progress information"""
+    batch_id: str
+    status: AnalysisStatus
+    total_images: int
+    completed_images: int
+    failed_images: int
+    current_image: Optional[str] = None
+    progress_percent: float
+    estimated_completion_time: Optional[str] = None
+    processing_rate: Optional[float] = None  # images per minute
+    average_processing_time: Optional[float] = None  # seconds per image
+
+class ComprehensiveBatchResult(BaseModel):
+    """Complete batch analysis result with all data"""
+    batch_analysis: BatchAnalysisResultEnhanced
+    paginated_results: PaginatedResults
+    download_urls: Dict[str, str] = Field(default_factory=dict)
+
+class BatchUploadResponse(BaseModel):
+    """Response from batch upload endpoint"""
+    status: str
+    message: str
+    batch_id: str
+    uploaded_files: List[Dict[str, Any]]
+    failed_files: List[Dict[str, str]]
+    analysis_params: Dict[str, Any]
+    next_step: str
+    summary: Dict[str, int]

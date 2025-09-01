@@ -149,14 +149,25 @@ export async function analyzeSingleImage(
  */
 export async function startBatchAnalysis(
   imagePaths: string[],
-  config: AnalysisConfig
+  config: AnalysisConfig,
+  batchId?: string
 ): Promise<{ message: string; batch_id: string; status_check_url: string }> {
-  const response = await apiClient.post('/analysis/batch', {
+  console.log('🔬 startBatchAnalysis called with', imagePaths.length, 'images, batchId:', batchId);
+  
+  const payload: any = {
     images: imagePaths,
     grid_square_size_inches: config.gridSquareSize,
     include_visualizations: config.includeVisualizations,
-  });
+  };
 
+  // If we have a batch_id from upload, include it
+  if (batchId) {
+    payload.batch_id = batchId;
+  }
+
+  console.log('📡 Sending batch analysis request:', payload);
+  const response = await apiClient.post('/analysis/batch', payload);
+  console.log('✅ Batch analysis response:', response.data);
   return response.data;
 }
 
@@ -256,6 +267,7 @@ export async function uploadBatchImagesEnhanced(
   config: AnalysisConfig,
   onProgress?: (progress: BatchUploadProgress) => void
 ): Promise<BatchUploadResponse> {
+  console.log('📤 uploadBatchImagesEnhanced called with', files.length, 'files');
   const formData = new FormData();
   const startTime = Date.now();
   let uploadedBytes = 0;
@@ -407,7 +419,8 @@ export async function uploadAndAnalyzeBatchEnhanced(
     // Phase 2: Start analysis
     await startBatchAnalysis(
       uploadResult.uploaded_files.map(f => f.file_path),
-      config
+      config,
+      uploadResult.batch_id  // Pass the batch_id from upload
     );
     
     // Phase 3: Monitor analysis progress
