@@ -11,6 +11,7 @@ import logging
 from scipy import stats
 from pathlib import Path
 import json
+import math
 
 from app.models.fish_analysis import FishAnalysisResult
 
@@ -24,6 +25,28 @@ class PopulationAnalysisService:
             'total_length', 'standard_length', 'fork_length', 
             'head_length', 'eye_diameter', 'body_depth'
         ]
+    
+    def _sanitize_value(self, value: Any) -> Any:
+        """Sanitize numeric values to remove NaN, inf, and None values."""
+        if isinstance(value, (int, float)):
+            if math.isnan(value) or math.isinf(value):
+                return 0.0
+        elif value is None:
+            return 0.0
+        return value
+    
+    def _sanitize_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Recursively sanitize a dictionary to remove NaN and inf values."""
+        sanitized = {}
+        for key, value in data.items():
+            if isinstance(value, dict):
+                sanitized[key] = self._sanitize_dict(value)
+            elif isinstance(value, list):
+                sanitized[key] = [self._sanitize_value(v) if not isinstance(v, dict) 
+                                else self._sanitize_dict(v) for v in value]
+            else:
+                sanitized[key] = self._sanitize_value(value)
+        return sanitized
     
     def analyze_population(self, results: List[FishAnalysisResult]) -> Dict[str, Any]:
         """
@@ -63,18 +86,21 @@ class PopulationAnalysisService:
             # Calculate processing times
             processing_times = [r.processing_metadata.processing_time_seconds for r in successful_results]
             
-            return {
+            result = {
                 "total_fish": len(results),
                 "successful_analyses": len(successful_results),
                 "failed_analyses": len(results) - len(successful_results),
                 "processing_time_total": sum(processing_times),
-                "processing_time_average": np.mean(processing_times) if processing_times else 0,
+                "processing_time_average": float(np.mean(processing_times)) if processing_times else 0.0,
                 "distributions": distributions,
                 "correlations": correlations,
                 "insights": insights,
                 "size_classification": size_classification,
                 "quality_metrics": quality_metrics
             }
+            
+            # Sanitize the entire result to remove any NaN or inf values
+            return self._sanitize_dict(result)
             
         except Exception as e:
             logger.error(f"Error in population analysis: {str(e)}")
@@ -118,17 +144,29 @@ class PopulationAnalysisService:
             data = df[column].dropna()
             
             try:
+                # Calculate statistics with NaN handling
+                mean_val = data.mean()
+                median_val = data.median()
+                std_val = data.std()
+                min_val = data.min()
+                max_val = data.max()
+                q25_val = data.quantile(0.25)
+                q75_val = data.quantile(0.75)
+                skew_val = data.skew()
+                kurt_val = data.kurtosis()
+                
+                # Sanitize each value
                 distribution = {
                     "measurement_name": column.replace('_', ' ').title(),
-                    "mean": float(data.mean()),
-                    "median": float(data.median()),
-                    "std_dev": float(data.std()),
-                    "min_value": float(data.min()),
-                    "max_value": float(data.max()),
-                    "q25": float(data.quantile(0.25)),
-                    "q75": float(data.quantile(0.75)),
-                    "skewness": float(data.skew()),
-                    "kurtosis": float(data.kurtosis()),
+                    "mean": float(mean_val) if not pd.isna(mean_val) else 0.0,
+                    "median": float(median_val) if not pd.isna(median_val) else 0.0,
+                    "std_dev": float(std_val) if not pd.isna(std_val) else 0.0,
+                    "min_value": float(min_val) if not pd.isna(min_val) else 0.0,
+                    "max_value": float(max_val) if not pd.isna(max_val) else 0.0,
+                    "q25": float(q25_val) if not pd.isna(q25_val) else 0.0,
+                    "q75": float(q75_val) if not pd.isna(q75_val) else 0.0,
+                    "skewness": float(skew_val) if not pd.isna(skew_val) else 0.0,
+                    "kurtosis": float(kurt_val) if not pd.isna(kurt_val) else 0.0,
                     "sample_size": int(len(data))
                 }
                 distributions.append(distribution)
@@ -164,10 +202,16 @@ class PopulationAnalysisService:
                     if col1 in corr_matrix.index and col2 in corr_matrix.columns:
                         corr_coef = corr_matrix.loc[col1, col2]
                         
+                        # Check for NaN correlation coefficient
+                        if pd.isna(corr_coef) or math.isnan(corr_coef) or math.isinf(corr_coef):
+                            continue
+                            
                         if abs(corr_coef) > 0.3:  # Only include moderate+ correlations
                             # Calculate p-value
                             try:
                                 _, p_value = stats.pearsonr(corr_data[col1], corr_data[col2])
+                                if pd.isna(p_value) or math.isnan(p_value) or math.isinf(p_value):
+                                    p_value = 1.0
                             except:
                                 p_value = 1.0
                             

@@ -3,13 +3,15 @@ Fish analysis endpoints
 """
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from typing import List, Dict, Any, Optional
 import logging
 from pathlib import Path
 import uuid
 from datetime import datetime
 import asyncio
+import json
+import math
 
 from app.core.config import settings
 from app.models.fish_analysis import (
@@ -18,7 +20,8 @@ from app.models.fish_analysis import (
     BatchAnalysisResultEnhanced, PaginatedResults, BatchResultsQuery,
     ComprehensiveBatchResult, AnalysisProgress, BatchUploadResponse,
     QualityMetrics, SizeClassification, PopulationDistribution,
-    PopulationCorrelation, PopulationInsight
+    PopulationCorrelation, PopulationInsight, ImageDimensions,
+    CalibrationInfo, ProcessingMetadata
 )
 from app.services.fish_measurement import fish_measurement_service
 from app.services.population_analysis import population_analysis_service
@@ -28,6 +31,21 @@ router = APIRouter()
 
 # In-memory storage for batch analysis status (in production, use Redis/database)
 batch_analysis_status: Dict[str, Dict[str, Any]] = {}
+
+def sanitize_for_json(obj: Any) -> Any:
+    """Recursively sanitize an object to be JSON-safe, removing NaN, inf, and other problematic values."""
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_for_json(item) for item in obj]
+    elif isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return 0.0
+        return obj
+    elif obj is None:
+        return None
+    else:
+        return obj
 
 @router.post("/single", response_model=FishAnalysisResult)
 async def analyze_single_image(request: AnalysisRequest):
@@ -321,8 +339,16 @@ async def get_population_statistics(batch_id: str):
         if not results:
             raise HTTPException(status_code=400, detail="No analysis results found")
         
-        # Perform population analysis
-        pop_stats = population_analysis_service.analyze_population(results)
+        # Filter only successful results for population analysis
+        successful_results = [r for r in results if r.status == AnalysisStatus.COMPLETED]
+        if not successful_results:
+            raise HTTPException(
+                status_code=400, 
+                detail="No successful analysis results found for population statistics"
+            )
+        
+        # Perform population analysis using only successful results
+        pop_stats = population_analysis_service.analyze_population(successful_results)
         
         # Convert to Pydantic models
         distributions = [PopulationDistribution(**dist) for dist in pop_stats["distributions"]]
@@ -527,10 +553,44 @@ async def get_comprehensive_batch_results(batch_id: str):
         # Get basic batch results
         batch_info = batch_analysis_status[batch_id]
         if batch_info["status"] != AnalysisStatus.COMPLETED:
-            raise HTTPException(status_code=400, detail="Batch analysis not completed")
+            if batch_info["status"] == AnalysisStatus.PROCESSING:
+                raise HTTPException(
+                    status_code=202, 
+                    detail=f"Batch analysis still in progress: {batch_info['completed_images']}/{batch_info['total_images']} completed"
+                )
+            elif batch_info["status"] == AnalysisStatus.FAILED:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Batch analysis failed: {batch_info.get('error_message', 'Unknown error')}"
+                )
+            else:
+                raise HTTPException(status_code=400, detail="Batch analysis not completed")
         
-        # Get population statistics
-        pop_stats = await get_population_statistics(batch_id)
+        # Get population statistics (only from successful results)
+        try:
+            pop_stats = await get_population_statistics(batch_id)
+        except HTTPException as e:
+            # If population stats fail, create empty stats for partial results
+            if "No analysis results found" in str(e.detail) or batch_info["completed_images"] == 0:
+                pop_stats = PopulationStatistics(
+                    total_fish=0,
+                    successful_analyses=0,
+                    failed_analyses=batch_info["failed_images"],
+                    processing_time_total=batch_info.get("total_processing_time", 0),
+                    processing_time_average=0.0,
+                    distributions=[],
+                    correlations=[],
+                    insights=[],
+                    size_classification={},
+                    quality_metrics=QualityMetrics(
+                        high_confidence=0,
+                        medium_confidence=0,
+                        low_confidence=0,
+                        average_detection_confidence=0.0
+                    )
+                )
+            else:
+                raise
         
         # Get first page of results
         paginated_results = await get_batch_results_paginated(batch_id, page=1, per_page=12)
@@ -553,8 +613,8 @@ async def get_comprehensive_batch_results(batch_id: str):
             visualization_urls={
                 "distributions": [],  # TODO: Generate visualization URLs
                 "correlations": [],
-                "population_overview": "",
-                "size_classification": ""
+                "population_overview": [],
+                "size_classification": []
             }
         )
         
@@ -566,11 +626,23 @@ async def get_comprehensive_batch_results(batch_id: str):
             "individual_results_json": f"/api/v1/analysis/batch/{batch_id}/download/json"
         }
         
-        return ComprehensiveBatchResult(
+        # Create the result
+        result = ComprehensiveBatchResult(
             batch_analysis=enhanced_batch,
             paginated_results=paginated_results,
             download_urls=download_urls
         )
+        
+        # Sanitize the result to ensure JSON compatibility
+        try:
+            # Test JSON serialization to catch any remaining NaN values
+            json.dumps(result.model_dump(), default=str)
+            return result
+        except (ValueError, TypeError) as e:
+            logger.error(f"JSON serialization error in comprehensive results: {str(e)}")
+            # If serialization fails, return a sanitized version
+            sanitized_data = sanitize_for_json(result.model_dump())
+            return ComprehensiveBatchResult.model_validate(sanitized_data)
         
     except HTTPException:
         raise
@@ -667,6 +739,31 @@ async def _process_batch_images(
             except Exception as e:
                 logger.error(f"Error processing batch image {image_path}: {str(e)}")
                 batch_info["failed_images"] += 1
+                
+                # Create failed result to include in partial results
+                failed_result = FishAnalysisResult(
+                    analysis_id=str(uuid.uuid4()),
+                    image_path=image_path,
+                    status=AnalysisStatus.FAILED,
+                    image_dimensions=ImageDimensions(width=1, height=1),
+                    calibration=CalibrationInfo(
+                        pixels_per_inch=0.0,
+                        grid_square_size_inches=grid_square_size,
+                        detected_squares=0,
+                        calibration_quality="failed"
+                    ),
+                    detections={},
+                    detailed_detections=[],
+                    measurements=[],
+                    processing_metadata=ProcessingMetadata(
+                        processing_time_seconds=0.0,
+                        model_version="yolov8",
+                        api_version=settings.VERSION,
+                        processed_at=datetime.utcnow()
+                    ),
+                    error_message=str(e)
+                )
+                results.append(failed_result)
         
         # Clear current image
         batch_info["current_image"] = None

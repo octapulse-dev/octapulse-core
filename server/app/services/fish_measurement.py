@@ -331,17 +331,58 @@ class EnhancedFishMeasurementService:
         try:
             fish_pixels = image[trout_mask > 0]
             if len(fish_pixels) == 0:
+                logger.warning("No fish pixels found in mask")
                 return None
             
+            # Ensure we have enough pixels for meaningful analysis
+            if len(fish_pixels) < 10:
+                logger.warning(f"Too few fish pixels ({len(fish_pixels)}) for color analysis")
+                return None
+            
+            # Calculate mean color with NaN handling
             mean_color = np.mean(fish_pixels, axis=0)
+            if np.any(np.isnan(mean_color)) or np.any(np.isinf(mean_color)):
+                logger.warning("Invalid mean color values, using defaults")
+                mean_color = np.array([0.0, 0.0, 0.0])
             
-            # Color clustering
-            kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
-            kmeans.fit(fish_pixels.reshape(-1, 3))
+            # Reshape and validate data for clustering
+            pixel_data = fish_pixels.reshape(-1, 3)
             
-            dominant_colors = kmeans.cluster_centers_
-            color_percentages = np.bincount(kmeans.labels_) / len(kmeans.labels_)
+            # Remove any invalid values
+            valid_mask = ~(np.isnan(pixel_data).any(axis=1) | np.isinf(pixel_data).any(axis=1))
+            pixel_data = pixel_data[valid_mask]
+            
+            if len(pixel_data) < 10:
+                logger.warning("Too few valid pixels after filtering for color analysis")
+                return None
+            
+            # Determine appropriate number of clusters (max 3, but adapt to data)
+            n_clusters = min(3, max(1, len(pixel_data) // 5))
+            
+            # Color clustering with better error handling
+            with np.errstate(divide='ignore', invalid='ignore'):
+                kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+                kmeans.fit(pixel_data)
+                
+                dominant_colors = kmeans.cluster_centers_
+                labels = kmeans.labels_
+                
+                # Ensure we have valid cluster centers
+                if np.any(np.isnan(dominant_colors)) or np.any(np.isinf(dominant_colors)):
+                    logger.warning("Invalid cluster centers, falling back to mean color")
+                    dominant_colors = np.array([mean_color] * n_clusters)
+                
+                # Calculate color percentages
+                color_percentages = np.bincount(labels) / len(labels)
+                if np.any(np.isnan(color_percentages)) or np.any(np.isinf(color_percentages)):
+                    logger.warning("Invalid color percentages, using uniform distribution")
+                    color_percentages = np.ones(n_clusters) / n_clusters
+            
+            # Calculate color variance
             color_variance = np.var(fish_pixels, axis=0)
+            if np.any(np.isnan(color_variance)) or np.any(np.isinf(color_variance)):
+                logger.warning("Invalid color variance, using zeros")
+                color_variance = np.array([0.0, 0.0, 0.0])
             
             return ColorAnalysis(
                 mean_color_bgr=mean_color.tolist(),
@@ -382,10 +423,30 @@ class EnhancedFishMeasurementService:
         try:
             logger.info(f"Processing image: {image_path}")
             
-            # Load image
+            # Validate image file exists
+            image_file = Path(image_path)
+            if not image_file.exists():
+                raise ValueError(f"Image file does not exist: {image_path}")
+            
+            # Validate file extension
+            valid_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif'}
+            if image_file.suffix.lower() not in valid_extensions:
+                raise ValueError(f"Unsupported image format: {image_file.suffix}")
+            
+            # Load and validate image
             image = cv2.imread(image_path)
             if image is None:
-                raise ValueError(f"Could not load image: {image_path}")
+                raise ValueError(f"Could not load image (corrupted or invalid format): {image_path}")
+            
+            # Validate image dimensions
+            if image.shape[0] <= 0 or image.shape[1] <= 0:
+                raise ValueError(f"Invalid image dimensions: {image.shape[1]}x{image.shape[0]}")
+            
+            # Validate minimum image size
+            if image.shape[0] < 100 or image.shape[1] < 100:
+                raise ValueError(f"Image too small for analysis: {image.shape[1]}x{image.shape[0]} (minimum 100x100)")
+            
+            logger.info(f"Successfully loaded image: {image.shape[1]}x{image.shape[0]} pixels")
             
             self.grid_square_size = grid_square_size
             
@@ -481,15 +542,27 @@ class EnhancedFishMeasurementService:
             logger.error(f"Error processing image {image_path}: {str(e)}")
             processing_time = (datetime.now() - processing_start).total_seconds()
             
+            # Try to get image dimensions even if processing failed
+            image_width, image_height = 1, 1  # Valid minimal dimensions to pass validation
+            try:
+                if Path(image_path).exists():
+                    temp_image = cv2.imread(image_path)
+                    if temp_image is not None and temp_image.shape[0] > 0 and temp_image.shape[1] > 0:
+                        image_height, image_width = temp_image.shape[:2]
+            except Exception:
+                # If we can't get dimensions, use minimal valid values
+                pass
+            
             return FishAnalysisResult(
                 analysis_id=analysis_id,
                 image_path=image_path,
                 status=AnalysisStatus.FAILED,
-                image_dimensions=ImageDimensions(width=0, height=0),
+                image_dimensions=ImageDimensions(width=image_width, height=image_height),
                 calibration=CalibrationInfo(
                     pixels_per_inch=0.0,
                     grid_square_size_inches=grid_square_size,
-                    detected_squares=0
+                    detected_squares=0,
+                    calibration_quality="failed"
                 ),
                 detections={},
                 detailed_detections=[],
