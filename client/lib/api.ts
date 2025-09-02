@@ -105,6 +105,11 @@ export async function uploadBatchImages(
   
   formData.append('grid_square_size', config.gridSquareSize.toString());
   formData.append('include_visualizations', config.includeVisualizations.toString());
+  formData.append('include_color_analysis', config.includeColorAnalysis.toString());
+  formData.append('include_lateral_line_analysis', config.includeLateralLineAnalysis.toString());
+  formData.append('save_results', config.saveResults.toString());
+  formData.append('save_uploads', config.saveUploads.toString());
+  formData.append('save_logs', config.saveLogs.toString());
 
   const response: AxiosResponse<BatchUploadResponse> = await apiClient.post(
     '/upload/batch',
@@ -158,6 +163,11 @@ export async function startBatchAnalysis(
     images: imagePaths,
     grid_square_size_inches: config.gridSquareSize,
     include_visualizations: config.includeVisualizations,
+    include_color_analysis: config.includeColorAnalysis,
+    include_lateral_line_analysis: config.includeLateralLineAnalysis,
+    save_results: config.saveResults,
+    save_uploads: config.saveUploads,
+    save_logs: config.saveLogs,
   };
 
   // If we have a batch_id from upload, include it
@@ -166,9 +176,71 @@ export async function startBatchAnalysis(
   }
 
   console.log('📡 Sending batch analysis request:', payload);
-  const response = await apiClient.post('/analysis/batch', payload);
+  const response = await apiClient.post('/analysis/batch', payload, {
+    timeout: 60000, // Reduced to 60 seconds since we'll stream progress
+  });
   console.log('✅ Batch analysis response:', response.data);
   return response.data;
+}
+
+/**
+ * Stream batch analysis progress using polling
+ */
+export async function streamBatchProgress(
+  batchId: string, 
+  onProgress: (progress: AnalysisProgress) => void,
+  onComplete?: (result: ComprehensiveBatchResult) => void,
+  onError?: (error: any) => void
+): Promise<void> {
+  const pollInterval = 1000; // Poll every second
+  const maxAttempts = 300; // 5 minutes max
+  let attempts = 0;
+
+  const poll = async () => {
+    try {
+      const progress = await getBatchAnalysisProgress(batchId);
+      onProgress(progress);
+
+      if (progress.status === 'completed') {
+        console.log('🎉 Streaming completed, fetching final results...');
+        try {
+          const finalResult = await getComprehensiveBatchResults(batchId);
+          onComplete?.(finalResult);
+        } catch (resultError) {
+          console.error('Failed to fetch final results:', resultError);
+          onError?.(resultError);
+        }
+        return;
+      } 
+      
+      if (progress.status === 'failed') {
+        console.log('❌ Analysis failed during streaming');
+        onError?.(new Error('Batch analysis failed'));
+        return;
+      }
+
+      attempts++;
+      if (attempts >= maxAttempts) {
+        onError?.(new Error('Analysis timeout - exceeded maximum wait time'));
+        return;
+      }
+
+      // Continue polling
+      setTimeout(poll, pollInterval);
+    } catch (error) {
+      console.error('Polling error:', error);
+      attempts++;
+      if (attempts >= maxAttempts) {
+        onError?.(error);
+        return;
+      }
+      // Retry after a short delay
+      setTimeout(poll, pollInterval);
+    }
+  };
+
+  // Start polling
+  poll();
 }
 
 /**
@@ -291,6 +363,11 @@ export async function uploadBatchImagesEnhanced(
   
   formData.append('grid_square_size', config.gridSquareSize.toString());
   formData.append('include_visualizations', config.includeVisualizations.toString());
+  formData.append('include_color_analysis', config.includeColorAnalysis.toString());
+  formData.append('include_lateral_line_analysis', config.includeLateralLineAnalysis.toString());
+  formData.append('save_results', config.saveResults.toString());
+  formData.append('save_uploads', config.saveUploads.toString());
+  formData.append('save_logs', config.saveLogs.toString());
 
   console.log('🚀 Sending FormData to /upload/batch...');
   try {
@@ -443,30 +520,25 @@ export async function uploadAndAnalyzeBatchEnhanced(
     );
     console.log('✅ Phase 2 complete: Analysis started:', analysisStartResult);
     
-    console.log('🔄 Phase 3: Starting progress monitoring...');
-    // Phase 3: Monitor analysis progress
-    let attempts = 0;
-    const maxAttempts = 600; // 10 minutes max for large batches
-    
-    while (attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-      
-      console.log(`📊 Checking progress attempt ${attempts + 1}/${maxAttempts}...`);
-      const progress = await getBatchAnalysisProgress(uploadResult.batch_id);
-      console.log('📈 Progress update:', progress);
-      onAnalysisProgress?.(progress);
-      
-      if (progress.status === 'completed' || progress.status === 'failed') {
-        break;
-      }
-      
-      attempts++;
-    }
-    
-    // Phase 4: Get comprehensive results
-    const comprehensiveResults = await getComprehensiveBatchResults(uploadResult.batch_id);
-    
-    return comprehensiveResults;
+    console.log('🔄 Phase 3: Starting streaming progress monitoring...');
+    // Phase 3: Stream analysis progress
+    return new Promise((resolve, reject) => {
+      streamBatchProgress(
+        uploadResult.batch_id,
+        (progress) => {
+          console.log('📈 Streaming progress update:', progress);
+          onAnalysisProgress?.(progress);
+        },
+        (finalResult) => {
+          console.log('✅ Streaming completed with final result:', finalResult);
+          resolve(finalResult);
+        },
+        (error) => {
+          console.error('❌ Streaming failed:', error);
+          reject(error);
+        }
+      );
+    });
     
   } catch (error) {
     throw error;

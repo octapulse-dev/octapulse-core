@@ -109,6 +109,53 @@ export default function AnalysisConfigComponent({
         </label>
       </div>
 
+      {/* Save Options */}
+      <div className="space-y-4">
+        <h4 className="text-sm font-medium text-white">Save Options</h4>
+        
+        {/* Save Results */}
+        <label className="flex items-center space-x-3 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={config.saveResults}
+            onChange={(e) => updateConfig('saveResults', e.target.checked)}
+            disabled={disabled}
+            className="w-4 h-4 text-purple-500 bg-slate-800/50 border border-slate-600/50 rounded focus:ring-purple-500/50 focus:ring-2 transition-colors"
+          />
+          <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
+            Save analysis results
+          </span>
+        </label>
+        
+        {/* Save Uploads */}
+        <label className="flex items-center space-x-3 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={config.saveUploads}
+            onChange={(e) => updateConfig('saveUploads', e.target.checked)}
+            disabled={disabled}
+            className="w-4 h-4 text-orange-500 bg-slate-800/50 border border-slate-600/50 rounded focus:ring-orange-500/50 focus:ring-2 transition-colors"
+          />
+          <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
+            Save uploaded images
+          </span>
+        </label>
+        
+        {/* Save Logs */}
+        <label className="flex items-center space-x-3 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={config.saveLogs}
+            onChange={(e) => updateConfig('saveLogs', e.target.checked)}
+            disabled={disabled}
+            className="w-4 h-4 text-yellow-500 bg-slate-800/50 border border-slate-600/50 rounded focus:ring-yellow-500/50 focus:ring-2 transition-colors"
+          />
+          <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
+            Save processing logs
+          </span>
+        </label>
+      </div>
+
       {/* Reset to Defaults */}
       <div className="pt-4 border-t border-slate-700/30">
         <button
@@ -117,7 +164,10 @@ export default function AnalysisConfigComponent({
             gridSquareSize: 1.0,
             includeVisualizations: true,
             includeColorAnalysis: true,
-            includeLateralLineAnalysis: true
+            includeLateralLineAnalysis: true,
+            saveResults: false,
+            saveUploads: false,
+            saveLogs: false
           })}
           disabled={disabled}
           className="w-full minimal-button text-sm"

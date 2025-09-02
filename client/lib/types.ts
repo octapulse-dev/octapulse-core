@@ -153,6 +153,9 @@ export interface AnalysisConfig {
   includeVisualizations: boolean;
   includeColorAnalysis: boolean;
   includeLateralLineAnalysis: boolean;
+  saveResults: boolean;
+  saveUploads: boolean;
+  saveLogs: boolean;
 }
 
 // Population Statistics Types

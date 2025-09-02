@@ -29,7 +29,10 @@ export default function PhenotypingPage() {
     gridSquareSize: 1.0,
     includeVisualizations: true,
     includeColorAnalysis: true,
-    includeLateralLineAnalysis: true
+    includeLateralLineAnalysis: true,
+    saveResults: false,
+    saveUploads: false,
+    saveLogs: false
   });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<FishAnalysisResult | null>(null);

@@ -126,6 +126,70 @@ export default function ImageUpload({
     };
   }, [files]);
 
+  // Handle paste events for images
+  const handlePaste = useCallback(async (event: ClipboardEvent) => {
+    if (disabled) return;
+    
+    const items = Array.from(event.clipboardData?.items || []);
+    const imageItems = items.filter(item => item.type.startsWith('image/'));
+    
+    if (imageItems.length === 0) return;
+    
+    event.preventDefault();
+    
+    const newFiles: UploadedFile[] = [];
+    
+    for (const item of imageItems) {
+      const file = item.getAsFile();
+      if (!file) continue;
+      
+      // Create a proper File object with a name
+      const timestamp = Date.now();
+      const extension = file.type.split('/')[1] || 'png';
+      const namedFile = new File([file], `pasted-image-${timestamp}.${extension}`, {
+        type: file.type,
+        lastModified: timestamp
+      });
+      
+      const validation = validateImageFile(namedFile);
+      if (!validation.valid) {
+        console.error(`Pasted image validation failed: ${validation.error}`);
+        continue;
+      }
+      
+      const id = Math.random().toString(36).substring(2) + timestamp.toString(36);
+      const uploadedFile: UploadedFile = {
+        file: namedFile,
+        id,
+        preview: URL.createObjectURL(namedFile),
+      };
+      
+      newFiles.push(uploadedFile);
+    }
+    
+    if (newFiles.length > 0) {
+      // Check file limits
+      const totalFiles = files.length + newFiles.length;
+      if (totalFiles > maxFiles) {
+        console.error(`Maximum ${maxFiles} file${maxFiles > 1 ? 's' : ''} allowed`);
+        return;
+      }
+      
+      const updatedFiles = mode === 'single' ? newFiles : [...files, ...newFiles];
+      onFilesChange(updatedFiles);
+    }
+  }, [disabled, files, maxFiles, mode, onFilesChange]);
+
+  // Add paste event listener
+  useEffect(() => {
+    const handleWindowPaste = (event: ClipboardEvent) => {
+      handlePaste(event);
+    };
+    
+    window.addEventListener('paste', handleWindowPaste);
+    return () => window.removeEventListener('paste', handleWindowPaste);
+  }, [handlePaste]);
+
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Upload Area */}
@@ -155,13 +219,13 @@ export default function ImageUpload({
               <p className="text-slate-400 text-sm">
                 {isDragActive || dragActive
                   ? 'Drop your images here...'
-                  : `Drag and drop ${mode === 'single' ? 'an image' : 'images'} here, or click to browse`
+                  : `Drag and drop ${mode === 'single' ? 'an image' : 'images'} here, click to browse, or paste from clipboard`
                 }
               </p>
               
               <p className="text-xs text-slate-500">
                 Supports: JPEG, PNG, BMP, TIFF • Max size: {formatFileSize(maxSize)}
-                {mode === 'batch' && ` • Max ${maxFiles} files`}
+                {mode === 'batch' && ` • Max ${maxFiles} files`} • Paste with Ctrl+V (⌘+V)
               </p>
             </div>
 

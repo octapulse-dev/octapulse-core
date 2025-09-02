@@ -37,26 +37,30 @@ export default function BatchAnalysisPage() {
     gridSquareSize: 1.0,
     includeVisualizations: true,
     includeColorAnalysis: true,
-    includeLateralLineAnalysis: true
+    includeLateralLineAnalysis: true,
+    saveResults: false,
+    saveUploads: false,
+    saveLogs: false
   });
 
   // Use the performance-optimized batch analysis hook
   const {
-    stage,
-    batchResult,
-    uploadProgress,
-    analysisProgress,
-    paginatedResults,
-    error,
-    retryCount,
-    isProcessing,
-    isCompleted,
-    hasFailed,
-    canRetry,
-    startBatchAnalysis,
-    cancelAnalysis,
-    loadResults,
-    resetAnalysis
+    stage = 'idle',
+    batchResult = null,
+    currentBatchId = null,
+    uploadProgress = null,
+    analysisProgress = null,
+    paginatedResults = null,
+    error = null,
+    retryCount = 0,
+    isProcessing = false,
+    isCompleted = false,
+    hasFailed = false,
+    canRetry = false,
+    startBatchAnalysis = () => {},
+    cancelAnalysis = () => {},
+    loadResults = () => {},
+    resetAnalysis = () => {}
   } = useBatchAnalysis({
     onStageChange: (stage) => {
       console.log('🔄 Stage changed to:', stage);
@@ -78,6 +82,7 @@ export default function BatchAnalysisPage() {
 
   // UI state
   const [showPopulationStats, setShowPopulationStats] = useState(true);
+  const [modelInfo, setModelInfo] = useState<{ name: string; loaded: boolean } | null>(null);
 
   // Handle batch analysis with performance monitoring
   const handleBatchAnalysis = async () => {
@@ -89,9 +94,19 @@ export default function BatchAnalysisPage() {
       const { healthCheck } = await import('@/lib/api');
       const health = await healthCheck();
       console.log('✅ Backend health check passed:', health);
+      
+      // Store model information for progress display
+      setModelInfo({
+        name: 'YOLOv8 (best.pt)',
+        loaded: health.model_loaded
+      });
     } catch (healthError) {
       console.error('❌ Backend health check failed:', healthError);
-      // Continue anyway, but warn user
+      // Continue anyway, but warn user - still set model info as best guess
+      setModelInfo({
+        name: 'YOLOv8 (best.pt)',
+        loaded: false // Unknown, but likely loaded if analysis works
+      });
     }
     
     console.log('📊 About to call startBatchAnalysis with:', { 
@@ -144,13 +159,16 @@ export default function BatchAnalysisPage() {
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
         <h3 className="font-bold text-yellow-800 mb-2">Debug Info (Remove After Testing)</h3>
         <p className="text-sm text-yellow-700">
-          Files: {files.length} | Processing: {isProcessing.toString()} | Failed: {hasFailed.toString()} | 
-          Stage: {stage} | Can Enable Button: {(files.length >= 2 && !isProcessing).toString()}
+          Files: {files.length} | Processing: {String(isProcessing)} | Failed: {String(hasFailed)} | 
+          Stage: {stage} | Can Enable Button: {String(files.length >= 2 && !isProcessing)}
         </p>
         <p className="text-sm text-yellow-700">
-          Upload Progress: {uploadProgress ? `${uploadProgress.overall_progress}%` : 'null'} | 
-          Analysis Progress: {analysisProgress ? `${analysisProgress.progress_percent}%` : 'null'} |
-          Batch ID: {currentBatchId || 'none'}
+          Upload Progress: {uploadProgress?.overall_progress ?? 'null'}% | 
+          Analysis Progress: {analysisProgress?.progress_percent ?? 'null'}% |
+          Batch ID: {currentBatchId ?? 'none'}
+        </p>
+        <p className="text-sm text-yellow-700">
+          Save Settings: Results={String(config.saveResults)} | Uploads={String(config.saveUploads)} | Logs={String(config.saveLogs)}
         </p>
       </div>
 
@@ -330,7 +348,8 @@ export default function BatchAnalysisPage() {
             {analysisProgress ? (
               <BatchProgressTracker 
                 progress={analysisProgress} 
-                isVisible={true} 
+                isVisible={true}
+                modelInfo={modelInfo}
               />
             ) : (
               <div className="text-center py-4">

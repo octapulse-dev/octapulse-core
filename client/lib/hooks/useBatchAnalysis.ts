@@ -55,6 +55,7 @@ export function useBatchAnalysis(options: UseBatchAnalysisOptions = {}) {
 
   // Cleanup on unmount
   useEffect(() => {
+    isComponentMountedRef.current = true; // Ensure mounted state is set on mount
     return () => {
       isComponentMountedRef.current = false;
       if (abortControllerRef.current) {
