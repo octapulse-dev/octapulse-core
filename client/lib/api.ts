@@ -235,7 +235,7 @@ export async function streamBatchProgress(
         return;
       }
       // Retry after a short delay
-      setTimeout(poll, pollInterval);
+      setTimeout(poll, pollInterval * 2); // backoff briefly on transient timeouts
     }
   };
 
@@ -468,7 +468,8 @@ export async function getComprehensiveBatchResults(
  */
 export async function getBatchAnalysisProgress(batchId: string): Promise<AnalysisProgress> {
   const response: AxiosResponse<AnalysisProgress> = await apiClient.get(
-    `/analysis/batch/${batchId}/progress`
+    `/analysis/batch/${batchId}/progress`,
+    { timeout: 60000 } // allow longer for busy systems
   );
 
   return response.data;

@@ -742,11 +742,17 @@ async def _process_batch_images(
                         return
                     batch_info["current_image"] = image_path
                     logger.info(f"Processing batch image {idx+1}/{len(image_paths)}: {image_path}")
-                    result = await fish_measurement_service.process_image(
-                        image_path=image_path,
-                        grid_square_size=grid_square_size,
-                        include_visualizations=include_visualizations
-                    )
+                    # Offload CPU-bound processing to a thread to avoid blocking the event loop
+                    def _run_sync():
+                        # Run the existing coroutine to completion in a new event loop in this worker thread
+                        return asyncio.run(
+                            fish_measurement_service.process_image(
+                                image_path=image_path,
+                                grid_square_size=grid_square_size,
+                                include_visualizations=include_visualizations
+                            )
+                        )
+                    result = await asyncio.to_thread(_run_sync)
                     results.append(result)
                     batch_info["completed_images"] += 1
                     logger.info(f"Completed batch image {idx+1}/{len(image_paths)}")

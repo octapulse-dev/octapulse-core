@@ -30,6 +30,19 @@ import {
   AlertCircle
 } from 'lucide-react';
 
+function BadgeProgressState({ stage }: { stage: string }) {
+  const map: Record<string, { text: string; color: string }> = {
+    uploading: { text: 'Uploading', color: 'bg-sky-100 text-sky-700' },
+    analyzing: { text: 'Analyzing', color: 'bg-emerald-100 text-emerald-700' },
+  };
+  const state = map[stage] || { text: stage, color: 'bg-gray-100 text-gray-700' };
+  return (
+    <span className={`px-2 py-1 rounded text-[10px] font-semibold tracking-wide ${state.color}`}>
+      {state.text}
+    </span>
+  );
+}
+
 export default function BatchAnalysisPage() {
   // Core state
   const [files, setFiles] = useState<UploadedFile[]>([]);
@@ -147,6 +160,53 @@ export default function BatchAnalysisPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Global compact progress ribbon */}
+      {(stage === 'uploading' || stage === 'analyzing') && (
+        <div className="fixed top-0 inset-x-0 z-50">
+          <div className="mx-auto max-w-7xl">
+            <div className="m-2 rounded-lg shadow-lg border border-gray-200 bg-white/95 backdrop-blur px-4 py-2">
+              <div className="flex items-center gap-3">
+                {stage === 'uploading' ? (
+                  <UploadIcon className="w-4 h-4 text-sky-600 animate-pulse" />
+                ) : (
+                  <Activity className="w-4 h-4 text-emerald-600 animate-spin" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between text-xs text-gray-700">
+                    <div className="truncate">
+                      {stage === 'uploading' && (
+                        <span>
+                          Uploading {uploadProgress?.uploaded_files ?? 0}/{uploadProgress?.total_files ?? files.length}
+                        </span>
+                      )}
+                      {stage === 'analyzing' && (
+                        <span>
+                          Analyzing {analysisProgress?.completed_images ?? 0}/{analysisProgress?.total_images ?? files.length}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mono font-semibold">
+                      {stage === 'uploading'
+                        ? `${uploadProgress?.overall_progress ?? 0}%`
+                        : `${analysisProgress?.progress_percent ?? 0}%`}
+                    </div>
+                  </div>
+                  <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5">
+                    <div
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        stage === 'uploading' ? 'bg-sky-500' : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${stage === 'uploading' ? (uploadProgress?.overall_progress ?? 0) : (analysisProgress?.progress_percent ?? 0)}%` }}
+                    />
+                  </div>
+                </div>
+                <BadgeProgressState stage={stage} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {(stage === 'uploading' || stage === 'analyzing') && <div className="h-14" />}
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mono-bold">Batch Fish Population Analysis</h1>
