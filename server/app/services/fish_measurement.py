@@ -23,6 +23,8 @@ from app.models.fish_analysis import (
     ColorAnalysis, LateralLineAnalysis, CalibrationInfo, ImageDimensions,
     ProcessingMetadata, AnalysisStatus
 )
+from app.services.in_memory_storage import store, make_mem_vis_key
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -423,20 +425,26 @@ class EnhancedFishMeasurementService:
         try:
             logger.info(f"Processing image: {image_path}")
             
-            # Validate image file exists
-            image_file = Path(image_path)
-            if not image_file.exists():
-                raise ValueError(f"Image file does not exist: {image_path}")
-            
-            # Validate file extension
-            valid_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif'}
-            if image_file.suffix.lower() not in valid_extensions:
-                raise ValueError(f"Unsupported image format: {image_file.suffix}")
-            
-            # Load and validate image
-            image = cv2.imread(image_path)
-            if image is None:
-                raise ValueError(f"Could not load image (corrupted or invalid format): {image_path}")
+            # Load image from disk or memory store
+            image: np.ndarray
+            if image_path.startswith('mem://'):
+                blob = store.get(image_path)
+                if blob is None:
+                    raise ValueError(f"In-memory image not found: {image_path}")
+                data, _content_type = blob
+                image_array = np.frombuffer(data, dtype=np.uint8)
+                image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+                if image is None:
+                    raise ValueError(f"Could not decode in-memory image: {image_path}")
+            else:
+                # Validate image file exists
+                image_file = Path(image_path)
+                if not image_file.exists():
+                    raise ValueError(f"Image file does not exist: {image_path}")
+                # Load and validate image
+                image = cv2.imread(image_path)
+                if image is None:
+                    raise ValueError(f"Could not load image (corrupted or invalid format): {image_path}")
             
             # Validate image dimensions
             if image.shape[0] <= 0 or image.shape[1] <= 0:
@@ -585,22 +593,22 @@ class EnhancedFishMeasurementService:
     ) -> Dict[str, str]:
         """Generate visualization images"""
         try:
-            results_dir = Path(settings.RESULTS_DIR)
-            results_dir.mkdir(exist_ok=True)
-            
-            vis_paths = {}
-            
+            vis_paths: Dict[str, str] = {}
             # Create detailed visualization
             detailed_vis = self._create_detailed_visualization(image, segmentation_data, measurements)
-            detailed_path = results_dir / f"{analysis_id}_detailed.jpg"
-            cv2.imwrite(str(detailed_path), detailed_vis)
-            vis_paths['detailed'] = str(detailed_path)
+            ok1, buf1 = cv2.imencode('.jpg', detailed_vis, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
+            if ok1:
+                key1 = make_mem_vis_key(analysis_id, 'detailed')
+                store.put(key1, buf1.tobytes(), content_type='image/jpeg', ttl_seconds=settings.MEMORY_TTL_SECONDS)
+                vis_paths['detailed'] = key1
             
             # Create measurements-only visualization
             clean_vis = self._create_measurements_only_visualization(image, measurements)
-            clean_path = results_dir / f"{analysis_id}_measurements.jpg"
-            cv2.imwrite(str(clean_path), clean_vis)
-            vis_paths['measurements'] = str(clean_path)
+            ok2, buf2 = cv2.imencode('.jpg', clean_vis, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
+            if ok2:
+                key2 = make_mem_vis_key(analysis_id, 'measurements')
+                store.put(key2, buf2.tobytes(), content_type='image/jpeg', ttl_seconds=settings.MEMORY_TTL_SECONDS)
+                vis_paths['measurements'] = key2
             
             return vis_paths
             

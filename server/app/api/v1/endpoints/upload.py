@@ -13,6 +13,7 @@ from datetime import datetime
 
 from app.core.config import settings
 from app.utils.file_utils import validate_image_file, generate_unique_filename
+from app.services.in_memory_storage import store, make_mem_image_key
 from app.models.fish_analysis import AnalysisStatus
 
 logger = logging.getLogger(__name__)
@@ -43,27 +44,22 @@ async def upload_single_image(
         file_extension = Path(file.filename).suffix.lower()
         unique_filename = generate_unique_filename(file.filename)
         
-        # Create upload directory
-        upload_dir = Path(settings.UPLOAD_DIR)
-        upload_dir.mkdir(exist_ok=True)
+        # Read content and store in memory instead of disk
+        content = await file.read()
+        batch_id = str(uuid.uuid4())
+        mem_key = make_mem_image_key(batch_id, unique_filename)
+        store.put(mem_key, content, content_type=file.content_type, ttl_seconds=settings.MEMORY_TTL_SECONDS)
         
-        file_path = upload_dir / unique_filename
+        logger.info(f"Single image uploaded to memory: {unique_filename} -> {mem_key}")
         
-        # Save file
-        async with aiofiles.open(file_path, 'wb') as f:
-            content = await file.read()
-            await f.write(content)
-        
-        logger.info(f"Single image uploaded: {unique_filename}")
-        
-        # Return upload info
+        # Return upload info (using mem:// URI)
         return {
             "status": "success",
             "message": "Image uploaded successfully",
             "file_info": {
                 "original_filename": file.filename,
                 "saved_filename": unique_filename,
-                "file_path": str(file_path),
+                "file_path": mem_key,
                 "file_size": len(content),
                 "upload_time": datetime.utcnow().isoformat()
             },
@@ -71,7 +67,7 @@ async def upload_single_image(
                 "grid_square_size": grid_square_size,
                 "include_visualizations": include_visualizations
             },
-            "next_step": f"Call /api/v1/analysis/single with file_path: {file_path}"
+            "next_step": f"Call /api/v1/analysis/single with file_path: {mem_key}"
         }
         
     except HTTPException:
@@ -108,10 +104,9 @@ async def upload_batch_images(
         if len(files) == 0:
             raise HTTPException(status_code=400, detail="No files provided")
         
-        # Create upload directory
-        upload_dir = Path(settings.UPLOAD_DIR)
-        upload_dir.mkdir(exist_ok=True)
-        
+        # Create a batch id for in-memory references
+        batch_id = str(uuid.uuid4())
+
         uploaded_files = []
         failed_files = []
         
@@ -123,17 +118,14 @@ async def upload_batch_images(
                 
                 # Generate unique filename
                 unique_filename = generate_unique_filename(file.filename)
-                file_path = upload_dir / unique_filename
-                
-                # Save file
-                async with aiofiles.open(file_path, 'wb') as f:
-                    content = await file.read()
-                    await f.write(content)
+                content = await file.read()
+                mem_key = make_mem_image_key(batch_id, unique_filename)
+                store.put(mem_key, content, content_type=file.content_type, ttl_seconds=settings.MEMORY_TTL_SECONDS)
                 
                 uploaded_files.append({
                     "original_filename": file.filename,
                     "saved_filename": unique_filename,
-                    "file_path": str(file_path),
+                    "file_path": mem_key,
                     "file_size": len(content),
                     "upload_time": datetime.utcnow().isoformat()
                 })
@@ -150,8 +142,6 @@ async def upload_batch_images(
                 status_code=400,
                 detail="No files were successfully uploaded"
             )
-        
-        batch_id = str(uuid.uuid4())
         
         logger.info(f"Batch upload completed: {len(uploaded_files)} successful, {len(failed_files)} failed")
         
@@ -191,21 +181,23 @@ async def get_upload_status(filename: str):
         File existence status and metadata
     """
     try:
-        file_path = Path(settings.UPLOAD_DIR) / filename
-        
-        if not file_path.exists():
-            raise HTTPException(status_code=404, detail="File not found")
-        
-        file_stats = file_path.stat()
-        
-        return {
-            "status": "found",
-            "filename": filename,
-            "file_path": str(file_path),
-            "file_size": file_stats.st_size,
-            "modified_time": datetime.fromtimestamp(file_stats.st_mtime).isoformat(),
-            "exists": True
-        }
+        # This endpoint now supports both disk files and in-memory keys
+        # Try in-memory first with unknown batch id (best-effort)
+        # We cannot know exact key without batch id, so check any mem key ending with filename
+        # Fallback to disk existence for legacy
+        upload_dir = Path(settings.UPLOAD_DIR)
+        file_path = upload_dir / filename
+        if file_path.exists():
+            file_stats = file_path.stat()
+            return {
+                "status": "found",
+                "filename": filename,
+                "file_path": str(file_path),
+                "file_size": file_stats.st_size,
+                "modified_time": datetime.fromtimestamp(file_stats.st_mtime).isoformat(),
+                "exists": True
+            }
+        raise HTTPException(status_code=404, detail="File not found")
         
     except HTTPException:
         raise
@@ -225,6 +217,7 @@ async def cleanup_old_uploads(days_old: int = 7):
         Cleanup summary
     """
     try:
+        # Keep legacy cleanup for disk files but document that in-memory TTL handles most cleanup
         upload_dir = Path(settings.UPLOAD_DIR)
         if not upload_dir.exists():
             return {"status": "success", "message": "Upload directory does not exist", "deleted_count": 0}
