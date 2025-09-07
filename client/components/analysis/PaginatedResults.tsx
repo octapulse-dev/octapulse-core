@@ -68,6 +68,10 @@ export function PaginatedResults({
     }
   };
 
+  const openResultModal = (result: FishAnalysisResult) => {
+    onViewResult?.(result);
+  };
+
   if (isLoading) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
@@ -217,7 +221,7 @@ export function PaginatedResults({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => onViewResult?.(result)}
+                        onClick={() => openResultModal(result)}
                         className="flex-1 text-xs"
                       >
                         <Eye className="h-3 w-3 mr-1" />
@@ -235,7 +239,7 @@ export function PaginatedResults({
                     </>
                   )}
                   {result.status === AnalysisStatus.PROCESSING && (
-                    <div className="w-full bg-sky-50 text-sky-700 text-xs py-2 px-3 rounded border border-sky-200 text-center">
+                    <div className="w-full bg-neutral-50 text-neutral-800 text-xs py-2 px-3 rounded border border-neutral-200 text-center">
                       Processing...
                     </div>
                   )}

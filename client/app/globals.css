@@ -8,26 +8,26 @@
   --card-foreground: #111827;
   --popover: #ffffff;
   --popover-foreground: #111827;
-  --primary: #0ea5e9;
+  --primary: #000000;
   --primary-foreground: #ffffff;
   --secondary: #f3f4f6;
   --secondary-foreground: #374151;
   --muted: #f3f4f6;
   --muted-foreground: #6b7280;
-  --accent: #10b981;
+  --accent: #000000;
   --accent-foreground: #ffffff;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --border: #e5e7eb;
   --input: #ffffff;
-  --ring: #0ea5e9;
+  --ring: #000000;
   --radius: 0.75rem;
   
   /* Blue-green gradient colors */
-  --gradient-from: #0ea5e9;
-  --gradient-to: #10b981;
-  --gradient-hover-from: #0284c7;
-  --gradient-hover-to: #059669;
+  --gradient-from: #000000;
+  --gradient-to: #4b5563;
+  --gradient-hover-from: #111111;
+  --gradient-hover-to: #374151;
   
   /* Light glassmorphism effects */
   --glass-bg: rgba(255, 255, 255, 0.8);
@@ -99,19 +99,7 @@ body {
 }
 
 /* Subtle animated background pattern */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    radial-gradient(circle at 25% 25%, rgba(14, 165, 233, 0.03) 0%, transparent 50%),
-    radial-gradient(circle at 75% 75%, rgba(16, 185, 129, 0.03) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: -1;
-}
+/* remove decorative background for minimal aesthetic */
 
 * {
   border-color: var(--border);

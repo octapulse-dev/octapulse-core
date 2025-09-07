@@ -62,6 +62,7 @@ export default function AnalysisResults({
       [section]: !prev[section]
     }));
   };
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   const handleDownload = () => {
     exportAnalysisResults(result, `fish-analysis-${result.analysis_id}.json`);
@@ -74,7 +75,7 @@ export default function AnalysisResults({
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
-              <Fish className="w-8 h-8 text-sky-500" />
+              <Fish className="w-8 h-8 text-black" />
               <h2 className="text-2xl font-bold text-gray-900 mono-bold tracking-wide">Fish Analysis Results</h2>
             </div>
             
@@ -98,19 +99,19 @@ export default function AnalysisResults({
           <div className="grid md:grid-cols-2 gap-6 text-sm tech-mono">
             <div className="space-y-2">
               <span className="text-gray-600 uppercase tracking-wide">Analysis ID:</span>
-              <div className="text-sky-600 font-bold">{result.analysis_id}</div>
+              <div className="text-black font-bold">{result.analysis_id}</div>
             </div>
             <div className="space-y-2">
               <span className="text-gray-600 uppercase tracking-wide">Processing Time:</span>
-              <div className="text-emerald-600 font-bold">{formatDuration(result.processing_metadata.processing_time_seconds)}</div>
+              <div className="text-black font-bold">{formatDuration(result.processing_metadata.processing_time_seconds)}</div>
             </div>
             <div className="space-y-2">
               <span className="text-gray-600 uppercase tracking-wide">Image Dimensions:</span>
-              <div className="text-teal-600 font-bold">{result.image_dimensions.width} × {result.image_dimensions.height}</div>
+              <div className="text-black font-bold">{result.image_dimensions.width} × {result.image_dimensions.height}</div>
             </div>
             <div className="space-y-2">
               <span className="text-gray-600 uppercase tracking-wide">Processed At:</span>
-              <div className="text-purple-600 font-bold">{formatTimestamp(result.processing_metadata.processed_at)}</div>
+              <div className="text-black font-bold">{formatTimestamp(result.processing_metadata.processed_at)}</div>
             </div>
           </div>
         </div>
@@ -182,7 +183,7 @@ export default function AnalysisResults({
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="p-6">
             <div className="flex items-center space-x-3 mb-6">
-              <ImageIcon className="w-6 h-6 text-sky-600" />
+              <ImageIcon className="w-6 h-6 text-black" />
               <h3 className="text-xl font-bold text-gray-900 mono-bold tracking-wide">Visualizations</h3>
             </div>
             
@@ -194,8 +195,9 @@ export default function AnalysisResults({
                     <img
                       src={getVisualizationUrl(result.analysis_id, type as 'detailed' | 'measurements')}
                       alt={`${type} visualization`}
-                      className="w-full transition-transform duration-300 group-hover:scale-105"
+                      className="w-full transition-transform duration-300 group-hover:scale-105 cursor-zoom-in"
                       loading="lazy"
+                      onClick={() => setSelectedImageUrl(getVisualizationUrl(result.analysis_id, type as 'detailed' | 'measurements'))}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-gray-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   </div>
@@ -232,6 +234,28 @@ export default function AnalysisResults({
           </div>
         </div>
       </CollapsibleSection>
+
+      {/* Image Lightbox */}
+      {selectedImageUrl && (
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedImageUrl(null)}
+        >
+          <div className="relative max-w-5xl max-h-full">
+            <img 
+              src={selectedImageUrl} 
+              alt="Visualization"
+              className="max-w-full max-h-[90vh] rounded-lg"
+            />
+            <button
+              onClick={() => setSelectedImageUrl(null)}
+              className="absolute top-4 right-4 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
