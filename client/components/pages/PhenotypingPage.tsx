@@ -121,7 +121,7 @@ export default function PhenotypingPage() {
                 <div className="text-sm text-gray-600 mt-1 sans-clean">Processing Time</div>
               </div>
               <div className="text-center">
-                <div className={`text-3xl font-bold mono-bold ${analysisResult.status === 'completed' ? 'text-emerald-600' : 'text-red-600'}`}>
+                <div className={`text-3xl font-bold mono-bold ${analysisResult.status === 'completed' ? 'text-black' : 'text-red-600'}`}>
                   {analysisResult.status === 'completed' ? '✓' : '✗'}
                 </div>
                 <div className="text-sm text-gray-600 mt-1 sans-clean">Status</div>
@@ -137,11 +137,11 @@ export default function PhenotypingPage() {
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-full bg-sky-500 text-white flex items-center justify-center text-sm font-bold mono-bold">1</div>
+                  <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-bold mono-bold">1</div>
                   <h2 className="text-xl font-semibold text-gray-900 mono-bold">Upload Fish Image</h2>
                 </div>
                 {files.length > 0 && (
-                  <div className="text-emerald-600 text-sm font-medium sans-clean">✓ Image uploaded</div>
+                  <div className="text-neutral-800 text-sm font-medium sans-clean">✓ Image uploaded</div>
                 )}
               </div>
             </div>
@@ -160,7 +160,7 @@ export default function PhenotypingPage() {
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="p-6 border-b border-gray-100">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold mono-bold">2</div>
+                  <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-bold mono-bold">2</div>
                   <h2 className="text-xl font-semibold text-gray-900 mono-bold">Configure Analysis</h2>
                 </div>
               </div>
@@ -180,7 +180,7 @@ export default function PhenotypingPage() {
                       className={`px-12 py-6 rounded-xl font-bold text-lg transition-all duration-300 mono-bold ${
                         isAnalyzing
                           ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                          : 'bg-black hover:bg-neutral-800 text-white shadow-sm'
                       }`}
                     >
                       {isAnalyzing ? (
@@ -206,7 +206,7 @@ export default function PhenotypingPage() {
             <div className="bg-white rounded-xl border border-sky-200 shadow-sm">
               <div className="p-6 border-b border-sky-100">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-full bg-sky-500 text-white flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center">
                     <Activity className="w-4 h-4 animate-spin" />
                   </div>
                   <h2 className="text-xl font-semibold text-gray-900 mono-bold">Processing Analysis</h2>
@@ -218,7 +218,7 @@ export default function PhenotypingPage() {
                     <span className="text-gray-900 font-medium sans-clean">
                       {currentStage || 'Initializing...'}
                     </span>
-                    <span className="text-sky-600 font-bold mono-bold">{analysisProgress}%</span>
+                    <span className="text-black font-bold mono-bold">{analysisProgress}%</span>
                   </div>
                   <Progress value={analysisProgress} className="h-3" />
                   <p className="text-sm text-gray-600 sans-clean">
@@ -235,7 +235,7 @@ export default function PhenotypingPage() {
               <div className="p-6 border-b border-gray-100">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold">✓</div>
+                    <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-bold">✓</div>
                     <h2 className="text-xl font-semibold text-gray-900 mono-bold">Analysis Results</h2>
                   </div>
                   <button

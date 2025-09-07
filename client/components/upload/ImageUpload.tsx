@@ -196,7 +196,7 @@ export default function ImageUpload({
       <div 
         className={`border-2 border-dashed rounded-xl transition-all duration-300 ${
           isDragActive || dragActive
-            ? 'border-sky-400/50 bg-sky-500/10' 
+            ? 'border-black/30 bg-black/5' 
             : 'border-slate-600/50 hover:border-slate-500/50'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       >

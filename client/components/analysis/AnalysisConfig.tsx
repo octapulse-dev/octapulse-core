@@ -50,7 +50,7 @@ export default function AnalysisConfigComponent({
           <span className="text-xs text-slate-400 whitespace-nowrap">inches</span>
           
           <div className="group relative">
-            <Info className="w-4 h-4 text-slate-400 cursor-help hover:text-sky-400 transition-colors" />
+            <Info className="w-4 h-4 text-slate-400 cursor-help hover:text-black transition-colors" />
             <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-slate-800/95 border border-slate-600/50 rounded-lg py-2 px-3 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap backdrop-blur-sm z-10">
               <p className="text-xs text-white">Size of calibration grid squares</p>
             </div>
@@ -73,7 +73,7 @@ export default function AnalysisConfigComponent({
             checked={config.includeVisualizations}
             onChange={(e) => updateConfig('includeVisualizations', e.target.checked)}
             disabled={disabled}
-            className="w-4 h-4 text-sky-500 bg-slate-800/50 border border-slate-600/50 rounded focus:ring-sky-500/50 focus:ring-2 transition-colors"
+            className="w-4 h-4 text-black bg-slate-800/50 border border-slate-600/50 rounded focus:ring-black/50 focus:ring-2 transition-colors"
           />
           <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
             Generate visualization images
@@ -87,7 +87,7 @@ export default function AnalysisConfigComponent({
             checked={config.includeColorAnalysis}
             onChange={(e) => updateConfig('includeColorAnalysis', e.target.checked)}
             disabled={disabled}
-            className="w-4 h-4 text-emerald-500 bg-slate-800/50 border border-slate-600/50 rounded focus:ring-emerald-500/50 focus:ring-2 transition-colors"
+            className="w-4 h-4 text-black bg-slate-800/50 border border-slate-600/50 rounded focus:ring-black/50 focus:ring-2 transition-colors"
           />
           <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
             Include color analysis
@@ -101,7 +101,7 @@ export default function AnalysisConfigComponent({
             checked={config.includeLateralLineAnalysis}
             onChange={(e) => updateConfig('includeLateralLineAnalysis', e.target.checked)}
             disabled={disabled}
-            className="w-4 h-4 text-cyan-500 bg-slate-800/50 border border-slate-600/50 rounded focus:ring-cyan-500/50 focus:ring-2 transition-colors"
+            className="w-4 h-4 text-black bg-slate-800/50 border border-slate-600/50 rounded focus:ring-black/50 focus:ring-2 transition-colors"
           />
           <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
             Include lateral line analysis

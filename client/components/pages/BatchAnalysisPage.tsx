@@ -32,8 +32,8 @@ import {
 
 function BadgeProgressState({ stage }: { stage: string }) {
   const map: Record<string, { text: string; color: string }> = {
-    uploading: { text: 'Uploading', color: 'bg-sky-100 text-sky-700' },
-    analyzing: { text: 'Analyzing', color: 'bg-emerald-100 text-emerald-700' },
+    uploading: { text: 'Uploading', color: 'bg-neutral-100 text-neutral-800' },
+    analyzing: { text: 'Analyzing', color: 'bg-neutral-100 text-neutral-800' },
   };
   const state = map[stage] || { text: stage, color: 'bg-gray-100 text-gray-700' };
   return (
@@ -167,9 +167,9 @@ export default function BatchAnalysisPage() {
             <div className="m-2 rounded-lg shadow-lg border border-gray-200 bg-white/95 backdrop-blur px-4 py-2">
               <div className="flex items-center gap-3">
                 {stage === 'uploading' ? (
-                  <UploadIcon className="w-4 h-4 text-sky-600 animate-pulse" />
+                  <UploadIcon className="w-4 h-4 text-black animate-pulse" />
                 ) : (
-                  <Activity className="w-4 h-4 text-emerald-600 animate-spin" />
+                  <Activity className="w-4 h-4 text-black animate-spin" />
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between text-xs text-gray-700">
@@ -193,9 +193,7 @@ export default function BatchAnalysisPage() {
                   </div>
                   <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5">
                     <div
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
-                        stage === 'uploading' ? 'bg-sky-500' : 'bg-emerald-500'
-                      }`}
+                      className={`h-1.5 rounded-full transition-all duration-300 bg-black`}
                       style={{ width: `${stage === 'uploading' ? (uploadProgress?.overall_progress ?? 0) : (analysisProgress?.progress_percent ?? 0)}%` }}
                     />
                   </div>
@@ -212,23 +210,6 @@ export default function BatchAnalysisPage() {
         <h1 className="text-3xl font-bold text-gray-900 mono-bold">Batch Fish Population Analysis</h1>
         <p className="text-gray-600 mt-2 sans-clean">
           Upload multiple fish images to get comprehensive population statistics and distribution analysis
-        </p>
-      </div>
-
-      {/* Debug Info - Remove After Testing */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-        <h3 className="font-bold text-yellow-800 mb-2">Debug Info (Remove After Testing)</h3>
-        <p className="text-sm text-yellow-700">
-          Files: {files.length} | Processing: {String(isProcessing)} | Failed: {String(hasFailed)} | 
-          Stage: {stage} | Can Enable Button: {String(files.length >= 2 && !isProcessing)}
-        </p>
-        <p className="text-sm text-yellow-700">
-          Upload Progress: {uploadProgress?.overall_progress ?? 'null'}% | 
-          Analysis Progress: {analysisProgress?.progress_percent ?? 'null'}% |
-          Batch ID: {currentBatchId ?? 'none'}
-        </p>
-        <p className="text-sm text-yellow-700">
-          Save Settings: Results={String(config.saveResults)} | Uploads={String(config.saveUploads)} | Logs={String(config.saveLogs)}
         </p>
       </div>
 
@@ -268,14 +249,14 @@ export default function BatchAnalysisPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mono-bold ${
-                  files.length === 0 ? 'bg-sky-500 text-white' : 'bg-emerald-500 text-white'
+                  files.length === 0 ? 'bg-black text-white' : 'bg-black text-white'
                 }`}>
                   {files.length === 0 ? '1' : '✓'}
                 </div>
                 <h2 className="text-xl font-semibold text-gray-900 mono-bold">Upload Fish Images</h2>
               </div>
               {files.length > 0 && (
-                <div className="text-emerald-600 text-sm font-medium sans-clean">
+                <div className="text-neutral-800 text-sm font-medium sans-clean">
                   ✓ {files.length} images uploaded
                 </div>
               )}
@@ -306,7 +287,7 @@ export default function BatchAnalysisPage() {
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center space-x-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mono-bold ${
-                  stage === 'idle' ? 'bg-emerald-500 text-white' : 'bg-gray-300 text-gray-600'
+                  stage === 'idle' ? 'bg-black text-white' : 'bg-gray-300 text-gray-600'
                 }`}>
                   2
                 </div>
@@ -334,7 +315,7 @@ export default function BatchAnalysisPage() {
                           ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                           : hasFailed
                             ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl'
-                            : 'bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                            : 'bg-black hover:bg-neutral-800 text-white shadow-sm'
                       }`}
                       style={{ pointerEvents: files.length < 2 || isProcessing ? 'none' : 'auto' }}
                     >
@@ -426,7 +407,7 @@ export default function BatchAnalysisPage() {
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold">✓</div>
+                  <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-bold">✓</div>
                   <h2 className="text-xl font-semibold text-gray-900 mono-bold">Population Statistics & Analysis</h2>
                 </div>
                 <div className="flex items-center space-x-4">
@@ -498,7 +479,7 @@ export default function BatchAnalysisPage() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 mt-8">
           <div className="text-center space-y-8">
             <div className="flex justify-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-sky-500 to-emerald-500 rounded-2xl flex items-center justify-center">
+              <div className="w-20 h-20 bg-black rounded-2xl flex items-center justify-center">
                 <TrendingUp className="w-10 h-10 text-white" />
               </div>
             </div>
@@ -515,8 +496,8 @@ export default function BatchAnalysisPage() {
             
             <div className="grid md:grid-cols-4 gap-8">
               <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-sky-100 rounded-2xl flex items-center justify-center mx-auto">
-                  <UploadIcon className="w-8 h-8 text-sky-600" />
+                <div className="w-16 h-16 bg-neutral-100 rounded-2xl flex items-center justify-center mx-auto">
+                  <UploadIcon className="w-8 h-8 text-black" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mono-bold mb-2">Bulk Upload</h3>
@@ -527,8 +508,8 @@ export default function BatchAnalysisPage() {
               </div>
               
               <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto">
-                  <BarChart3 className="w-8 h-8 text-emerald-600" />
+                <div className="w-16 h-16 bg-neutral-100 rounded-2xl flex items-center justify-center mx-auto">
+                  <BarChart3 className="w-8 h-8 text-black" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mono-bold mb-2">Population Stats</h3>
@@ -551,8 +532,8 @@ export default function BatchAnalysisPage() {
               </div>
               
               <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-teal-100 rounded-2xl flex items-center justify-center mx-auto">
-                  <Download className="w-8 h-8 text-teal-600" />
+                <div className="w-16 h-16 bg-neutral-100 rounded-2xl flex items-center justify-center mx-auto">
+                  <Download className="w-8 h-8 text-black" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mono-bold mb-2">Export Results</h3>

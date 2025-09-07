@@ -38,7 +38,7 @@ export default function Sidebar({ isCollapsed, onToggle, activeTab, onTabChange 
           "flex items-center space-x-3 transition-opacity duration-200",
           isCollapsed && "opacity-0 pointer-events-none"
         )}>
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-emerald-500 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center">
             <Fish className="w-4 h-4 text-white" />
           </div>
           <div>
@@ -73,13 +73,13 @@ export default function Sidebar({ isCollapsed, onToggle, activeTab, onTabChange 
               className={cn(
                 "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-left",
                 isActive 
-                  ? "bg-sky-50 text-sky-700 border border-sky-200" 
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-800"
+                  ? "bg-neutral-50 text-black border border-neutral-200" 
+                  : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900"
               )}
             >
               <Icon className={cn(
                 "w-5 h-5 flex-shrink-0",
-                isActive ? "text-sky-600" : "text-gray-500"
+                isActive ? "text-black" : "text-gray-500"
               )} />
               <div className={cn(
                 "transition-opacity duration-200",
