@@ -62,8 +62,8 @@ export default function Sidebar({ isCollapsed, onToggle, activeTab, onTabChange 
           "flex items-center space-x-3 transition-opacity duration-200",
           isCollapsed && "opacity-0 pointer-events-none"
         )}>
-          <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center">
-            <Fish className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center overflow-hidden">
+            <img src="/octapulse_logo.png" alt="OctaPulse" className="w-6 h-6 object-contain" />
           </div>
           <div>
             <h1 className="text-sm font-semibold text-gray-900 mono-bold">OctaPulse</h1>

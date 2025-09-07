@@ -24,7 +24,7 @@ export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
     {
       icon: Target,
       title: 'High Accuracy',
-      description: 'YOLOv8-based detection with sub-millimeter precision',
+      description: 'High-accuracy detection with sub-millimeter precision',
       color: 'from-neutral-900 to-neutral-700'
     },
     {
@@ -50,11 +50,8 @@ export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
         <div className="max-w-7xl mx-auto px-6 py-24">
           <div className="text-center space-y-8">
             <div className="flex justify-center">
-              <div className="relative">
-                <div className="w-24 h-24 bg-black rounded-2xl flex items-center justify-center shadow-2xl">
-                  <Fish className="w-12 h-12 text-white" />
-                </div>
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-neutral-900 rounded-full animate-pulse"></div>
+              <div className="relative w-28 h-28 rounded-2xl bg-black flex items-center justify-center shadow-2xl overflow-hidden">
+                <img src="/octapulse_logo.png" alt="OctaPulse" className="w-16 h-16 object-contain" />
               </div>
             </div>
             
@@ -63,7 +60,7 @@ export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
                 OctaPulse
               </h1>
               <p className="text-xl text-gray-700 max-w-2xl mx-auto sans-clean leading-relaxed">
-                Professional aquaculture analysis platform powered by advanced computer vision and AI
+                Professional aquaculture analysis platform for imaging-driven insights
               </p>
             </div>
             

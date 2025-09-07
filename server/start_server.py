@@ -25,7 +25,7 @@ def main():
     # Check if model file exists
     if not Path(settings.MODEL_PATH).exists():
         logger.error(f"Model file not found: {settings.MODEL_PATH}")
-        logger.error("Please ensure the YOLO model file 'best.pt' is present in the documents/ directory")
+        logger.error("Please ensure the model file 'best.pt' is present in the documents/ directory")
         sys.exit(1)
     
     # Create necessary directories

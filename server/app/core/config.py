@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     # Model settings
     MODEL_PATH: str = Field(
         default="documents/best.pt",
-        description="Path to the trained YOLO model"
+        description="Path to the trained model"
     )
     
     GRID_SQUARE_SIZE_INCHES: float = Field(

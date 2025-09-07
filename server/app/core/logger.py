@@ -34,4 +34,4 @@ def setup_logging():
     # Set specific logger levels
     logging.getLogger("uvicorn").setLevel(logging.INFO)
     logging.getLogger("uvicorn.access").setLevel(logging.INFO)
-    logging.getLogger("ultralytics").setLevel(logging.WARNING)  # Reduce YOLO verbosity
+    logging.getLogger("ultralytics").setLevel(logging.WARNING)  # Reduce model verbosity

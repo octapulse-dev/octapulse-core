@@ -232,7 +232,7 @@ async def get_batch_results(batch_id: str):
             results=batch_info["results"],
             processing_metadata={
                 "processing_time_seconds": batch_info.get("total_processing_time", 0),
-                "model_version": "yolov8",
+                "model_version": "model",
                 "api_version": settings.VERSION,
                 "processed_at": batch_info["started_at"]
             }
@@ -623,7 +623,7 @@ async def get_comprehensive_batch_results(batch_id: str):
             results=batch_info["results"],
             processing_metadata={
                 "processing_time_seconds": batch_info.get("total_processing_time", 0),
-                "model_version": "yolov8",
+                "model_version": "model",
                 "api_version": settings.VERSION,
                 "processed_at": batch_info["started_at"]
             },

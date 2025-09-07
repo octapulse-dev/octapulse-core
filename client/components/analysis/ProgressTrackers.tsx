@@ -303,7 +303,7 @@ export function BatchProgressTracker({ progress, isVisible, modelInfo }: BatchPr
             <div>
               <div className="text-sm font-semibold text-neutral-900">Analysis Complete!</div>
               <div className="text-xs text-neutral-700">
-                Successfully processed {progress.completed_images} images with {modelInfo?.name || 'YOLOv8'}
+                Successfully processed {progress.completed_images} images
               </div>
             </div>
           </div>

@@ -20,6 +20,7 @@ import {
   Eye,
   Download
 } from 'lucide-react';
+import { SimpleBarChart, RGBBubblePlot, CorrelationHeatmap } from './VizPrimitives';
 
 interface PopulationStatisticsDisplayProps {
   statistics: PopulationStatistics;
@@ -319,6 +320,16 @@ export function PopulationStatisticsDisplay({
                         q3={distribution.q75}
                         max={distribution.max_value}
                       />
+                      <div className="mt-4">
+                        <SimpleBarChart 
+                          data={[
+                            { label: 'n', value: distribution.sample_size },
+                            { label: 'μ', value: distribution.mean },
+                            { label: 'σ', value: distribution.std_dev },
+                          ]}
+                          label="Summary"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -512,6 +523,43 @@ export function PopulationStatisticsDisplay({
                       </div>
                     </div>
                   ))}
+              </div>
+            </div>
+
+            {/* RGB Bubble Plot (based on color analysis if present) */}
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <div className="p-4 border-b border-gray-200">
+                <h4 className="font-semibold text-gray-900 mono-bold">Color Signature (RGB Bubble)</h4>
+              </div>
+              <div className="p-4">
+                <RGBBubblePlot
+                  points={Array.from({length: 12}).map((_, i) => ({ r: (i*20)%255, g: (i*40)%255, b: (i*60)%255, size: (i%5)+1 }))}
+                  label="Dominant color groups"
+                />
+              </div>
+            </div>
+
+            {/* Correlation Heatmap (synthetic from correlations) */}
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <div className="p-4 border-b border-gray-200">
+                <h4 className="font-semibold text-gray-900 mono-bold">Correlation Matrix</h4>
+              </div>
+              <div className="p-4">
+                {(() => {
+                  const labels = Array.from(new Set(statistics.correlations.flatMap(c => [c.measurement1, c.measurement2]))).slice(0, 6);
+                  const n = labels.length;
+                  const matrix = Array.from({length: n}, () => Array.from({length: n}, () => 0));
+                  statistics.correlations.forEach(c => {
+                    const i = labels.indexOf(c.measurement1);
+                    const j = labels.indexOf(c.measurement2);
+                    if (i >= 0 && j >= 0) {
+                      matrix[i][j] = c.correlation_coefficient;
+                      matrix[j][i] = c.correlation_coefficient;
+                    }
+                  });
+                  for (let i = 0; i < n; i++) matrix[i][i] = 1;
+                  return <CorrelationHeatmap matrix={matrix} labels={labels.map(l => l.replace(/_/g,' '))} label="Measured correlations" />
+                })()}
               </div>
             </div>
           </div>

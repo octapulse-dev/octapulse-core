@@ -128,7 +128,7 @@ class FishAnalysisResult(BaseModel):
                 "measurements": [],
                 "processing_metadata": {
                     "processing_time_seconds": 3.45,
-                    "model_version": "yolov8",
+                    "model_version": "model",
                     "api_version": "1.0.0"
                 }
             }

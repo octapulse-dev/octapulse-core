@@ -11,8 +11,10 @@ import { DownloadCenter } from '@/components/analysis/DownloadCenter';
 import { useBatchAnalysis } from '@/lib/hooks/useBatchAnalysis';
 import { perfMonitor } from '@/lib/utils/performance';
 import { 
-  AnalysisConfig as AnalysisConfigType
+  AnalysisConfig as AnalysisConfigType,
+  FishAnalysisResult
 } from '@/lib/types';
+import { getVisualizationUrl } from '@/lib/api';
 import { 
   Fish, 
   Activity, 
@@ -95,7 +97,8 @@ export default function BatchAnalysisPage() {
 
   // UI state
   const [showPopulationStats, setShowPopulationStats] = useState(true);
-  const [modelInfo, setModelInfo] = useState<{ name: string; loaded: boolean } | null>(null);
+  const [modelInfo, setModelInfo] = useState<{ name: string; loaded: boolean } | undefined>(undefined);
+  const [selectedResult, setSelectedResult] = useState<FishAnalysisResult | null>(null);
 
   // Handle batch analysis with performance monitoring
   const handleBatchAnalysis = async () => {
@@ -110,14 +113,14 @@ export default function BatchAnalysisPage() {
       
       // Store model information for progress display
       setModelInfo({
-        name: 'YOLOv8 (best.pt)',
+        name: 'Model Loaded',
         loaded: health.model_loaded
       });
     } catch (healthError) {
       console.error('❌ Backend health check failed:', healthError);
       // Continue anyway, but warn user - still set model info as best guess
       setModelInfo({
-        name: 'YOLOv8 (best.pt)',
+        name: 'Model Loaded',
         loaded: false // Unknown, but likely loaded if analysis works
       });
     }
@@ -434,10 +437,7 @@ export default function BatchAnalysisPage() {
           <PaginatedResults 
             results={paginatedResults.items}
             isLoading={false}
-            onViewResult={(result) => {
-              console.log('View result:', result);
-              // TODO: Implement result detail view
-            }}
+            onViewResult={(result) => setSelectedResult(result)}
             onDownloadResult={(result) => {
               console.log('Download result:', result);
               // TODO: Implement individual result download
@@ -471,6 +471,58 @@ export default function BatchAnalysisPage() {
             downloadUrls={batchResult.download_urls}
             isVisible={true}
           />
+        )}
+        {selectedResult && (
+          <div 
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+            onClick={() => setSelectedResult(null)}
+          >
+            <div className="relative max-w-6xl w-full bg-white rounded-xl border border-neutral-200 shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-4 border-b border-neutral-200">
+                <div>
+                  <div className="text-sm text-neutral-600">Analysis ID</div>
+                  <div className="text-neutral-900 mono-bold text-lg truncate max-w-[70vw]">{selectedResult.analysis_id}</div>
+                </div>
+                <button
+                  onClick={() => setSelectedResult(null)}
+                  className="w-10 h-10 rounded-full bg-black text-white hover:bg-neutral-800 flex items-center justify-center"
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="p-4 grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="text-sm text-neutral-700 mono-bold">Detailed View</div>
+                  <div className="relative border border-neutral-200 rounded-lg overflow-hidden">
+                    <img
+                      src={getVisualizationUrl(selectedResult.analysis_id, 'detailed')}
+                      alt="Detailed visualization"
+                      className="w-full h-auto"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-sm text-neutral-700 mono-bold">Measurements View</div>
+                  <div className="relative border border-neutral-200 rounded-lg overflow-hidden">
+                    <img
+                      src={getVisualizationUrl(selectedResult.analysis_id, 'measurements')}
+                      alt="Measurements visualization"
+                      className="w-full h-auto"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 border-t border-neutral-200 flex justify-end gap-2">
+                <button
+                  onClick={() => setSelectedResult(null)}
+                  className="px-4 py-2 border border-neutral-300 rounded-md text-sm text-neutral-900 hover:bg-neutral-50"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

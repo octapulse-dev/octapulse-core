@@ -69,7 +69,7 @@ class EnhancedFishMeasurementService:
         self._load_model()
     
     def _load_model(self) -> None:
-        """Load the YOLO model"""
+        """Load the detection model"""
         try:
             if not Path(settings.MODEL_PATH).exists():
                 logger.error(f"Model file not found: {settings.MODEL_PATH}")
@@ -80,7 +80,7 @@ class EnhancedFishMeasurementService:
             
         except Exception as e:
             logger.error(f"Failed to load model: {str(e)}")
-            raise Exception(f"Failed to load YOLO model: {str(e)}")
+            raise Exception(f"Failed to load model: {str(e)}")
     
     def detect_single_grid_square(self, image: np.ndarray) -> Optional[Tuple[float, List]]:
         """Detect grid squares for calibration"""
@@ -181,7 +181,7 @@ class EnhancedFishMeasurementService:
         return squares
     
     def run_segmentation(self, image: np.ndarray) -> Dict:
-        """Run YOLO segmentation on the image"""
+        """Run segmentation on the image"""
         if not self.model:
             raise Exception("Model not loaded")
         
