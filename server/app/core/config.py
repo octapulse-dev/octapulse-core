@@ -64,6 +64,16 @@ class Settings(BaseSettings):
         description="TTL for in-memory stored images and artifacts"
     )
 
+    # AprilTag calibration
+    APRILTAG_SIZE_MM: float = Field(
+        default=100.0,
+        description="Physical side length of the AprilTag in millimeters"
+    )
+    APRILTAG_FAMILY: str = Field(
+        default="DICT_APRILTAG_25h9",
+        description="OpenCV aruco predefined AprilTag dictionary to detect"
+    )
+
     # Optional global limits and debugging
     MAX_TOTAL_BATCH_SIZE: int = Field(
         default=2_147_483_648,  # 2 GB

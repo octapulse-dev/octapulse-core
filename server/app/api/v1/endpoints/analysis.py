@@ -25,6 +25,21 @@ from app.models.fish_analysis import (
 )
 from app.services.fish_measurement import fish_measurement_service
 from app.services.in_memory_storage import store
+import io
+import csv
+import json as jsonlib
+import zipfile
+from typing import Iterable
+try:
+    import pandas as pd  # type: ignore
+except Exception:  # pragma: no cover
+    pd = None
+try:
+    from reportlab.lib.pagesizes import LETTER  # type: ignore
+    from reportlab.pdfgen import canvas  # type: ignore
+except Exception:  # pragma: no cover
+    LETTER = None
+    canvas = None
 from app.services.population_analysis import population_analysis_service
 
 logger = logging.getLogger(__name__)
@@ -681,8 +696,8 @@ async def download_batch_results(batch_id: str, format: str):
         File download response
     """
     try:
-        if format not in ['csv', 'json', 'pdf', 'zip']:
-            raise HTTPException(status_code=400, detail="Invalid format. Use: csv, json, pdf, zip")
+        if format not in ['csv', 'json', 'pdf', 'zip', 'xlsx']:
+            raise HTTPException(status_code=400, detail="Invalid format. Use: csv, json, pdf, zip, xlsx")
         
         if batch_id not in batch_analysis_status:
             raise HTTPException(status_code=404, detail="Batch analysis not found")
@@ -691,17 +706,104 @@ async def download_batch_results(batch_id: str, format: str):
         if batch_info["status"] != AnalysisStatus.COMPLETED:
             raise HTTPException(status_code=400, detail="Batch analysis not completed")
         
-        # For now, return a simple response
-        # TODO: Implement actual file generation and download
-        return JSONResponse(
-            content={
-                "message": f"Download would be generated for format: {format}",
-                "batch_id": batch_id,
-                "format": format,
-                "note": "File generation not yet implemented"
-            },
-            status_code=501  # Not Implemented
-        )
+        results = batch_info["results"]
+
+        def result_records() -> Iterable[dict]:
+            for r in results:
+                yield {
+                    "analysis_id": r.analysis_id,
+                    "image_path": r.image_path,
+                    "status": r.status.value,
+                    "width": r.image_dimensions.width,
+                    "height": r.image_dimensions.height,
+                    "pixels_per_inch": r.calibration.pixels_per_inch,
+                    "grid_square_size_inches": r.calibration.grid_square_size_inches,
+                    "detected_squares": r.calibration.detected_squares,
+                    "processing_time_seconds": r.processing_metadata.processing_time_seconds,
+                    "processed_at": str(r.processing_metadata.processed_at),
+                    "detections_total": sum(r.detections.values()) if r.detections else 0,
+                }
+
+        if format == 'json':
+            payload = [r.model_dump() for r in results]
+            return JSONResponse(content=payload)
+
+        if format == 'csv':
+            buf = io.StringIO()
+            writer = None
+            for rec in result_records():
+                if writer is None:
+                    writer = csv.DictWriter(buf, fieldnames=list(rec.keys()))
+                    writer.writeheader()
+                writer.writerow(rec)
+            data = buf.getvalue().encode('utf-8')
+            return StreamingResponse(io.BytesIO(data), media_type='text/csv', headers={
+                'Content-Disposition': f'attachment; filename="batch-{batch_id}-results.csv"'
+            })
+
+        if format == 'xlsx':
+            if pd is None:
+                raise HTTPException(status_code=500, detail="Excel export requires pandas/openpyxl installed")
+            df = pd.DataFrame(list(result_records()))
+            b = io.BytesIO()
+            with pd.ExcelWriter(b, engine='openpyxl') as writer:  # type: ignore
+                df.to_excel(writer, index=False, sheet_name='Results')
+            b.seek(0)
+            return StreamingResponse(b, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={
+                'Content-Disposition': f'attachment; filename="batch-{batch_id}-results.xlsx"'
+            })
+
+        if format == 'pdf':
+            if canvas is None or LETTER is None:
+                raise HTTPException(status_code=500, detail="PDF export requires reportlab installed")
+            b = io.BytesIO()
+            c = canvas.Canvas(b, pagesize=LETTER)
+            width, height = LETTER
+            c.setFont("Helvetica-Bold", 14)
+            c.drawString(40, height - 50, f"Batch Report: {batch_id}")
+            c.setFont("Helvetica", 10)
+            c.drawString(40, height - 70, f"Total: {batch_info['total_images']}  Completed: {batch_info['completed_images']}  Failed: {batch_info['failed_images']}")
+            y = height - 100
+            c.setFont("Helvetica", 9)
+            for rec in result_records():
+                line = f"{rec['analysis_id']} | {rec['status']} | {rec['width']}x{rec['height']} | {rec['processing_time_seconds']:.2f}s"
+                c.drawString(40, y, line)
+                y -= 14
+                if y < 60:
+                    c.showPage()
+                    y = height - 50
+                    c.setFont("Helvetica", 9)
+            c.showPage()
+            c.save()
+            b.seek(0)
+            return StreamingResponse(b, media_type='application/pdf', headers={
+                'Content-Disposition': f'attachment; filename="batch-{batch_id}-report.pdf"'
+            })
+
+        if format == 'zip':
+            b = io.BytesIO()
+            with zipfile.ZipFile(b, 'w', zipfile.ZIP_DEFLATED) as z:
+                # add visualizations from memory store if available
+                for r in results:
+                    for vtype in ['detailed', 'measurements']:
+                        key = f"memvis://{r.analysis_id}/{vtype}.jpg"
+                        blob = store.get(key)
+                        if blob is not None:
+                            data, _ct = blob
+                            z.writestr(f"visualizations/{r.analysis_id}_{vtype}.jpg", data)
+                # add CSV summary too
+                buf = io.StringIO()
+                writer = None
+                for rec in result_records():
+                    if writer is None:
+                        writer = csv.DictWriter(buf, fieldnames=list(rec.keys()))
+                        writer.writeheader()
+                    writer.writerow(rec)
+                z.writestr("summary.csv", buf.getvalue())
+            b.seek(0)
+            return StreamingResponse(b, media_type='application/zip', headers={
+                'Content-Disposition': f'attachment; filename="batch-{batch_id}-visualizations.zip"'
+            })
         
     except HTTPException:
         raise

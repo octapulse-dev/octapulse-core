@@ -434,15 +434,43 @@ export default function BatchAnalysisPage() {
 
         {/* Step 6: Individual Results */}
         {paginatedResults && (
-          <PaginatedResults 
-            results={paginatedResults.items}
-            isLoading={false}
-            onViewResult={(result) => setSelectedResult(result)}
-            onDownloadResult={(result) => {
-              console.log('Download result:', result);
-              // TODO: Implement individual result download
-            }}
-          />
+          <div className="space-y-4">
+            <PaginatedResults 
+              results={paginatedResults.items}
+              isLoading={false}
+              onViewResult={(result) => setSelectedResult(result)}
+              onDownloadResult={(result) => {
+                console.log('Download result:', result);
+              }}
+            />
+            {/* Simple pager controls to jump pages */}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                className="px-3 py-1.5 border border-neutral-300 rounded-md text-sm text-neutral-900 hover:bg-neutral-50"
+                onClick={async () => {
+                  try {
+                    const { getBatchResultsPaginated } = await import('@/lib/api');
+                    const next = await getBatchResultsPaginated(batchResult!.batch_analysis.batch_id, { page: paginatedResults.pagination.previous_page || 1 });
+                    // naive: just replace via state if needed later
+                  } catch {}
+                }}
+              >
+                Prev
+              </button>
+              <button
+                className="px-3 py-1.5 border border-neutral-300 rounded-md text-sm text-neutral-900 hover:bg-neutral-50"
+                onClick={async () => {
+                  try {
+                    const { getBatchResultsPaginated } = await import('@/lib/api');
+                    const next = await getBatchResultsPaginated(batchResult!.batch_analysis.batch_id, { page: paginatedResults.pagination.next_page || 1 });
+                    // naive: just replace via state if needed later
+                  } catch {}
+                }}
+              >
+                Next
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Error Display */}
