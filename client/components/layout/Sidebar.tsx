@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, Fish, BarChart3 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Fish, BarChart3, Cpu, Settings as SettingsIcon, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -23,6 +23,30 @@ const tabs = [
     label: 'Batch Analysis',
     icon: BarChart3,
     description: 'Population analysis & stats'
+  },
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    icon: BarChart3,
+    description: 'Overview & charts'
+  },
+  {
+    id: 'hardware',
+    label: 'Hardware',
+    icon: Cpu,
+    description: 'Devices & performance'
+  },
+  {
+    id: 'system-config',
+    label: 'System Config',
+    icon: SlidersHorizontal,
+    description: 'Processing & models'
+  },
+  {
+    id: 'settings',
+    label: 'Settings',
+    icon: SettingsIcon,
+    description: 'Preferences'
   }
 ];
 

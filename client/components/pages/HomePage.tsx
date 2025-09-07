@@ -92,6 +92,12 @@ export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
           <p className="text-lg text-gray-700 sans-clean">
             Cutting-edge tools for professional aquaculture research and analysis
           </p>
+          <div className="mt-6 flex gap-3 justify-center">
+            <a href="/analytics" className="px-4 py-2 bg-black text-white rounded-md text-sm hover:bg-neutral-800">Analytics</a>
+            <a href="/hardware" className="px-4 py-2 border border-neutral-300 rounded-md text-sm text-neutral-900 hover:bg-neutral-50">Hardware</a>
+            <a href="/system-config" className="px-4 py-2 border border-neutral-300 rounded-md text-sm text-neutral-900 hover:bg-neutral-50">System Config</a>
+            <a href="/settings" className="px-4 py-2 border border-neutral-300 rounded-md text-sm text-neutral-900 hover:bg-neutral-50">Settings</a>
+          </div>
         </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
