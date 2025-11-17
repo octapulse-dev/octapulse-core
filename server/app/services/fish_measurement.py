@@ -23,6 +23,8 @@ from app.models.fish_analysis import (
     ColorAnalysis, LateralLineAnalysis, CalibrationInfo, ImageDimensions,
     ProcessingMetadata, AnalysisStatus
 )
+from app.services.in_memory_storage import store, make_mem_vis_key
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,8 @@ class EnhancedFishMeasurementService:
         self.grid_square_size = settings.GRID_SQUARE_SIZE_INCHES
         self.pixels_per_inch = None
         self.grid_squares = []
+        self.apriltag_detected = False
+        self.pixels_per_mm = None
         
         # Class names from training
         self.class_names = {
@@ -67,7 +71,7 @@ class EnhancedFishMeasurementService:
         self._load_model()
     
     def _load_model(self) -> None:
-        """Load the YOLO model"""
+        """Load the detection model"""
         try:
             if not Path(settings.MODEL_PATH).exists():
                 logger.error(f"Model file not found: {settings.MODEL_PATH}")
@@ -78,7 +82,7 @@ class EnhancedFishMeasurementService:
             
         except Exception as e:
             logger.error(f"Failed to load model: {str(e)}")
-            raise Exception(f"Failed to load YOLO model: {str(e)}")
+            raise Exception(f"Failed to load model: {str(e)}")
     
     def detect_single_grid_square(self, image: np.ndarray) -> Optional[Tuple[float, List]]:
         """Detect grid squares for calibration"""
@@ -134,6 +138,39 @@ class EnhancedFishMeasurementService:
         
         self.grid_squares = best_squares
         return pixels_per_inch, best_squares
+
+    def detect_apriltag_scale(self, image: np.ndarray) -> Optional[float]:
+        try:
+            aruco = cv2.aruco if hasattr(cv2, 'aruco') else None
+            if aruco is None:
+                return None
+            dict_map = {
+                'DICT_APRILTAG_25h9': getattr(aruco, 'DICT_APRILTAG_25h9', None),
+                'DICT_APRILTAG_36h10': getattr(aruco, 'DICT_APRILTAG_36h10', None),
+                'DICT_APRILTAG_36h11': getattr(aruco, 'DICT_APRILTAG_36h11', None),
+            }
+            dict_id = dict_map.get(settings.APRILTAG_FAMILY, None)
+            if dict_id is None:
+                return None
+            dictionary = aruco.getPredefinedDictionary(dict_id)
+            parameters = aruco.DetectorParameters()
+            detector = aruco.ArucoDetector(dictionary, parameters)
+            corners, ids, _ = detector.detectMarkers(image)
+            if ids is None or len(corners) == 0:
+                return None
+            c = corners[0].reshape(-1, 2)
+            side_lengths = [
+                float(np.linalg.norm(c[0] - c[1])),
+                float(np.linalg.norm(c[1] - c[2])),
+                float(np.linalg.norm(c[2] - c[3])),
+                float(np.linalg.norm(c[3] - c[0]))
+            ]
+            avg_pixels = float(np.mean(side_lengths))
+            pixels_per_mm = avg_pixels / settings.APRILTAG_SIZE_MM
+            return pixels_per_mm
+        except Exception as e:
+            logger.debug(f"AprilTag detection skipped: {e}")
+            return None
     
     def _find_grid_squares_in_image(self, enhanced_image: np.ndarray) -> List[Tuple[int, int, int, int]]:
         """Find grid squares using contour detection"""
@@ -179,7 +216,7 @@ class EnhancedFishMeasurementService:
         return squares
     
     def run_segmentation(self, image: np.ndarray) -> Dict:
-        """Run YOLO segmentation on the image"""
+        """Run segmentation on the image"""
         if not self.model:
             raise Exception("Model not loaded")
         
@@ -423,20 +460,26 @@ class EnhancedFishMeasurementService:
         try:
             logger.info(f"Processing image: {image_path}")
             
-            # Validate image file exists
-            image_file = Path(image_path)
-            if not image_file.exists():
-                raise ValueError(f"Image file does not exist: {image_path}")
-            
-            # Validate file extension
-            valid_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif'}
-            if image_file.suffix.lower() not in valid_extensions:
-                raise ValueError(f"Unsupported image format: {image_file.suffix}")
-            
-            # Load and validate image
-            image = cv2.imread(image_path)
-            if image is None:
-                raise ValueError(f"Could not load image (corrupted or invalid format): {image_path}")
+            # Load image from disk or memory store
+            image: np.ndarray
+            if image_path.startswith('mem://'):
+                blob = store.get(image_path)
+                if blob is None:
+                    raise ValueError(f"In-memory image not found: {image_path}")
+                data, _content_type = blob
+                image_array = np.frombuffer(data, dtype=np.uint8)
+                image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+                if image is None:
+                    raise ValueError(f"Could not decode in-memory image: {image_path}")
+            else:
+                # Validate image file exists
+                image_file = Path(image_path)
+                if not image_file.exists():
+                    raise ValueError(f"Image file does not exist: {image_path}")
+                # Load and validate image
+                image = cv2.imread(image_path)
+                if image is None:
+                    raise ValueError(f"Could not load image (corrupted or invalid format): {image_path}")
             
             # Validate image dimensions
             if image.shape[0] <= 0 or image.shape[1] <= 0:
@@ -449,13 +492,22 @@ class EnhancedFishMeasurementService:
             logger.info(f"Successfully loaded image: {image.shape[1]}x{image.shape[0]} pixels")
             
             self.grid_square_size = grid_square_size
-            
-            # Get calibration
-            calibration_result = self.detect_single_grid_square(image)
-            if not calibration_result:
-                raise ValueError("Grid calibration failed - no grid pattern detected")
-            
-            self.pixels_per_inch, grid_squares = calibration_result
+
+            # AprilTag preferred calibration
+            self.apriltag_detected = False
+            self.pixels_per_mm = None
+            ppm = self.detect_apriltag_scale(image)
+            grid_squares = []
+            if ppm and ppm > 0:
+                self.pixels_per_mm = ppm
+                self.apriltag_detected = True
+                self.pixels_per_inch = ppm * 25.4
+            else:
+                # Fallback: grid calibration
+                calibration_result = self.detect_single_grid_square(image)
+                if not calibration_result:
+                    raise ValueError("Calibration failed - no AprilTag or grid detected")
+                self.pixels_per_inch, grid_squares = calibration_result
             
             # Run segmentation
             segmentation_data = self.run_segmentation(image)
@@ -522,7 +574,7 @@ class EnhancedFishMeasurementService:
                 lateral_line_analysis=lateral_line_analysis,
                 processing_metadata=ProcessingMetadata(
                     processing_time_seconds=processing_time,
-                    model_version="yolov8",
+                    model_version="model",
                     api_version=settings.VERSION,
                     processed_at=start_time
                 )
@@ -585,22 +637,22 @@ class EnhancedFishMeasurementService:
     ) -> Dict[str, str]:
         """Generate visualization images"""
         try:
-            results_dir = Path(settings.RESULTS_DIR)
-            results_dir.mkdir(exist_ok=True)
-            
-            vis_paths = {}
-            
+            vis_paths: Dict[str, str] = {}
             # Create detailed visualization
             detailed_vis = self._create_detailed_visualization(image, segmentation_data, measurements)
-            detailed_path = results_dir / f"{analysis_id}_detailed.jpg"
-            cv2.imwrite(str(detailed_path), detailed_vis)
-            vis_paths['detailed'] = str(detailed_path)
+            ok1, buf1 = cv2.imencode('.jpg', detailed_vis, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
+            if ok1:
+                key1 = make_mem_vis_key(analysis_id, 'detailed')
+                store.put(key1, buf1.tobytes(), content_type='image/jpeg', ttl_seconds=settings.MEMORY_TTL_SECONDS)
+                vis_paths['detailed'] = key1
             
             # Create measurements-only visualization
             clean_vis = self._create_measurements_only_visualization(image, measurements)
-            clean_path = results_dir / f"{analysis_id}_measurements.jpg"
-            cv2.imwrite(str(clean_path), clean_vis)
-            vis_paths['measurements'] = str(clean_path)
+            ok2, buf2 = cv2.imencode('.jpg', clean_vis, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
+            if ok2:
+                key2 = make_mem_vis_key(analysis_id, 'measurements')
+                store.put(key2, buf2.tobytes(), content_type='image/jpeg', ttl_seconds=settings.MEMORY_TTL_SECONDS)
+                vis_paths['measurements'] = key2
             
             return vis_paths
             

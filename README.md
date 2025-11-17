@@ -6,13 +6,13 @@ A professional aquaculture fish analysis platform using advanced computer vision
 
 ## 🌊 What is OctaPulse?
 
-OctaPulse is an end-to-end platform for analyzing fish images in aquaculture workflows. It automates precise measurements (lengths, areas), detects anatomical features using a YOLO-based model, calibrates using grid patterns, and produces visualizations and structured outputs for downstream decisions.
+OctaPulse is an end-to-end platform for analyzing fish images in aquaculture workflows. It automates precise measurements (lengths, areas), detects anatomical features using a segmentation model, calibrates using grid patterns, and produces visualizations and structured outputs for downstream decisions.
 
 ## 🐟 Features
 
 ### Core Analysis Capabilities
 - **Comprehensive Fish Measurements**: Automated length, width, and anatomical measurements
-- **Advanced Computer Vision**: YOLO-based segmentation for precise fish part detection
+- **Advanced Computer Vision**: Segmentation-based detection for precise fish part detection
 - **Grid Calibration**: Automatic calibration using grid patterns for accurate measurements
 - **Color Analysis**: Fish coloration analysis with dominant color extraction
 - **Batch Processing**: Analyze multiple fish images simultaneously
@@ -37,7 +37,7 @@ octapulse-core/
 │   │   ├── models/        # Pydantic models
 │   │   ├── services/      # Business logic
 │   │   └── utils/         # Helper functions
-│   ├── documents/         # YOLO model and analysis scripts
+│   ├── documents/         # Model and analysis scripts
 │   ├── uploads/           # Image uploads storage
 │   ├── results/           # Analysis results storage
 │   └── requirements.txt   # Python dependencies
@@ -168,7 +168,7 @@ curl -X POST "http://localhost:8000/api/v1/analysis/single" \
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `MODEL_PATH` | Path to YOLO model file | `documents/best.pt` |
+| `MODEL_PATH` | Path to model file | `documents/best.pt` |
 | `GRID_SQUARE_SIZE_INCHES` | Default grid square size | `1.0` |
 | `MAX_UPLOAD_SIZE` | Maximum file upload size (bytes) | `10485760` |
 | `ALLOWED_HOSTS` | CORS allowed origins | `http://localhost:3000` |
@@ -212,7 +212,7 @@ All responses follow consistent JSON format:
 
 ## 🧠 Fish Analysis Model
 
-The platform uses a custom-trained YOLO v8 model for fish segmentation capable of detecting:
+The platform uses a custom-trained segmentation model capable of detecting:
 
 - **Trout body** - Main fish body segmentation
 - **Eyes** - Eye detection for orientation
@@ -280,7 +280,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **YOLOv8** by Ultralytics for object detection and segmentation
+<!-- Removed explicit model naming for a vendor-neutral description -->
 - **FastAPI** for the high-performance web framework
 - **Next.js** for the modern React framework
 - **OpenCV** for computer vision capabilities

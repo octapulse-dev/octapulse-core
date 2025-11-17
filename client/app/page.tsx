@@ -6,6 +6,10 @@ import Sidebar from '@/components/layout/Sidebar';
 import HomePage from '@/components/pages/HomePage';
 import PhenotypingPage from '@/components/pages/PhenotypingPage';
 import BatchAnalysisPage from '@/components/pages/BatchAnalysisPage';
+import AnalyticsPage from '@/app/analytics/page';
+import HardwarePage from '@/app/hardware/page';
+import SystemConfigPage from '@/app/system-config/page';
+import SettingsPage from '@/app/settings/page';
 
 export default function Home() {
   const [currentPage, setCurrentPage] = useState<'home' | 'analysis'>('home');
@@ -48,6 +52,10 @@ export default function Home() {
             <div className="p-8">
               {activeTab === 'single-analysis' && <PhenotypingPage />}
               {activeTab === 'batch-analysis' && <BatchAnalysisPage />}
+              {activeTab === 'analytics' && <AnalyticsPage />}
+              {activeTab === 'hardware' && <HardwarePage />}
+              {activeTab === 'system-config' && <SystemConfigPage />}
+              {activeTab === 'settings' && <SettingsPage />}
             </div>
           </main>
         </div>

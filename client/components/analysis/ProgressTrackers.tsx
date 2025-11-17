@@ -30,8 +30,8 @@ export function UploadProgressTracker({ progress, isVisible }: UploadProgressTra
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 bg-sky-100 rounded-lg">
-          <Upload className="h-5 w-5 text-sky-600" />
+        <div className="p-2 bg-neutral-100 rounded-lg">
+          <Upload className="h-5 w-5 text-black" />
         </div>
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mono-bold">Upload Progress</h3>
@@ -49,7 +49,7 @@ export function UploadProgressTracker({ progress, isVisible }: UploadProgressTra
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div
-            className="bg-sky-500 h-2 rounded-full transition-all duration-300"
+            className="bg-black h-2 rounded-full transition-all duration-300"
             style={{ width: `${progress.overall_progress}%` }}
           />
         </div>
@@ -111,7 +111,7 @@ export function BatchProgressTracker({ progress, isVisible, modelInfo }: BatchPr
       case 'failed':
         return <XCircle className="h-5 w-5 text-red-500" />;
       case 'processing':
-        return <BarChart3 className="h-5 w-5 text-sky-500 animate-pulse" />;
+        return <BarChart3 className="h-5 w-5 text-black animate-pulse" />;
       default:
         return <Clock className="h-5 w-5 text-gray-500" />;
     }
@@ -143,7 +143,7 @@ export function BatchProgressTracker({ progress, isVisible, modelInfo }: BatchPr
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 bg-sky-100 rounded-lg">
+        <div className="p-2 bg-neutral-100 rounded-lg">
           {getStatusIcon()}
         </div>
         <div className="flex-1">
@@ -179,9 +179,9 @@ export function BatchProgressTracker({ progress, isVisible, modelInfo }: BatchPr
             <span>Analysis Progress</span>
             {progress.status === 'processing' && (
               <div className="flex gap-1">
-                <div className="w-1 h-1 bg-sky-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                <div className="w-1 h-1 bg-sky-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                <div className="w-1 h-1 bg-sky-500 rounded-full animate-bounce"></div>
+                <div className="w-1 h-1 bg-black rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div className="w-1 h-1 bg-black rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                <div className="w-1 h-1 bg-black rounded-full animate-bounce"></div>
               </div>
             )}
           </span>
@@ -192,9 +192,7 @@ export function BatchProgressTracker({ progress, isVisible, modelInfo }: BatchPr
             className={`h-3 rounded-full transition-all duration-500 relative overflow-hidden ${
               progress.status === 'failed' 
                 ? 'bg-red-500' 
-                : progress.status === 'completed' 
-                  ? 'bg-green-500' 
-                  : 'bg-gradient-to-r from-sky-500 to-emerald-500'
+                : 'bg-black'
             }`}
             style={{ width: `${progress.progress_percent}%` }}
           >
@@ -242,17 +240,17 @@ export function BatchProgressTracker({ progress, isVisible, modelInfo }: BatchPr
       {(progress.processing_rate || progress.average_processing_time) && (
         <div className="grid grid-cols-2 gap-4 mb-4">
           {progress.processing_rate && (
-            <div className="bg-sky-50 rounded-lg p-3">
-              <div className="text-xs text-sky-700 mb-1">Processing Rate</div>
-              <div className="text-sm font-medium mono text-sky-800">
+            <div className="bg-neutral-50 rounded-lg p-3">
+              <div className="text-xs text-neutral-700 mb-1">Processing Rate</div>
+              <div className="text-sm font-medium mono text-neutral-800">
                 {progress.processing_rate.toFixed(1)} img/min
               </div>
             </div>
           )}
           {progress.average_processing_time && (
-            <div className="bg-sky-50 rounded-lg p-3">
-              <div className="text-xs text-sky-700 mb-1">Avg Time</div>
-              <div className="text-sm font-medium mono text-sky-800">
+            <div className="bg-neutral-50 rounded-lg p-3">
+              <div className="text-xs text-neutral-700 mb-1">Avg Time</div>
+              <div className="text-sm font-medium mono text-neutral-800">
                 {progress.average_processing_time.toFixed(1)}s/img
               </div>
             </div>
@@ -262,20 +260,20 @@ export function BatchProgressTracker({ progress, isVisible, modelInfo }: BatchPr
 
       {/* Current Processing */}
       {progress.current_image && progress.status === 'processing' && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200 shadow-sm">
+        <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="w-3 h-3 bg-blue-500 rounded-full animate-ping"></div>
-              <div className="absolute top-0 left-0 w-3 h-3 bg-blue-600 rounded-full"></div>
+              <div className="w-3 h-3 bg-black rounded-full animate-ping"></div>
+              <div className="absolute top-0 left-0 w-3 h-3 bg-black rounded-full"></div>
             </div>
             <div>
-              <div className="text-xs text-blue-700 font-medium uppercase tracking-wide mb-1">
+              <div className="text-xs text-neutral-700 font-medium uppercase tracking-wide mb-1">
                 🔬 Currently Processing
               </div>
-              <div className="text-sm text-blue-900 font-semibold mono">
+              <div className="text-sm text-neutral-900 font-semibold mono">
                 {progress.current_image.split('/').pop()}
               </div>
-              <div className="text-xs text-blue-600 mt-1">
+              <div className="text-xs text-neutral-600 mt-1">
                 Image {progress.completed_images + 1} of {progress.total_images}
               </div>
             </div>
@@ -299,13 +297,13 @@ export function BatchProgressTracker({ progress, isVisible, modelInfo }: BatchPr
 
       {/* Completion Celebration */}
       {progress.status === 'completed' && (
-        <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+        <div className="mt-4 p-4 bg-neutral-50 rounded-lg border border-neutral-200">
           <div className="flex items-center gap-3">
             <div className="text-2xl">🎉</div>
             <div>
-              <div className="text-sm font-semibold text-green-800">Analysis Complete!</div>
-              <div className="text-xs text-green-600">
-                Successfully processed {progress.completed_images} images with {modelInfo?.name || 'YOLOv8'}
+              <div className="text-sm font-semibold text-neutral-900">Analysis Complete!</div>
+              <div className="text-xs text-neutral-700">
+                Successfully processed {progress.completed_images} images
               </div>
             </div>
           </div>

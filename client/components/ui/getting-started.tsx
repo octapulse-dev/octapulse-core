@@ -13,13 +13,13 @@ export default function GettingStarted({ onStartClick }: GettingStartedProps) {
       icon: Upload,
       title: 'Upload Image',
       description: 'Select a high-quality fish image with visible grid pattern for calibration',
-      color: 'text-sky-600 bg-sky-100'
+      color: 'text-black bg-neutral-100'
     },
     {
       icon: Settings,
       title: 'Configure Analysis',
       description: 'Set grid square size and choose analysis parameters for accurate measurements',
-      color: 'text-emerald-600 bg-emerald-100'
+      color: 'text-black bg-neutral-100'
     },
     {
       icon: BarChart3,
@@ -35,7 +35,7 @@ export default function GettingStarted({ onStartClick }: GettingStartedProps) {
         {/* Header */}
         <div className="space-y-4">
           <div className="flex justify-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-sky-500 to-emerald-500 rounded-2xl flex items-center justify-center">
+            <div className="w-20 h-20 bg-black rounded-2xl flex items-center justify-center">
               <Fish className="w-10 h-10 text-white" />
             </div>
           </div>
@@ -81,7 +81,7 @@ export default function GettingStarted({ onStartClick }: GettingStartedProps) {
           {onStartClick && (
             <button
               onClick={onStartClick}
-              className="px-6 py-3 bg-gradient-to-r from-sky-500 to-emerald-500 text-white rounded-lg hover:from-sky-600 hover:to-emerald-600 transition-colors mono-bold"
+              className="px-6 py-3 bg-black text-white rounded-md hover:bg-neutral-800 transition-colors mono-bold"
             >
               Upload Image
             </button>
