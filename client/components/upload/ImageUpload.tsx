@@ -4,13 +4,17 @@
 
 'use client';
 
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, memo, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, X, FileImage, AlertTriangle } from 'lucide-react';
+import { Upload, X, FileImage, AlertTriangle, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatFileSize, validateImageFile } from '@/lib/utils';
+import { useImageOptimization, useMemoryMonitor } from '@/lib/hooks/useImageOptimization';
+import { formatBytes } from '@/lib/utils/memoryManager';
+import VirtualizedFileList from './VirtualizedFileList';
+import { FileListSkeleton } from '@/components/ui/SkeletonLoaders';
 
 export interface UploadedFile {
   file: File;
@@ -33,14 +37,35 @@ export default function ImageUpload({
   mode,
   files,
   onFilesChange,
-  maxFiles = mode === 'single' ? 1 : 10,
+  maxFiles = mode === 'single' ? 1 : 100, // Increased default for batch mode
   maxSize = 10 * 1024 * 1024, // 10MB
   disabled = false,
   className = '',
 }: ImageUploadProps) {
   const [dragActive, setDragActive] = useState(false);
+  const [useVirtualization, setUseVirtualization] = useState(false);
 
-  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
+  // Image optimization hook for thumbnails
+  const {
+    optimizedFiles,
+    isProcessing: isOptimizing,
+    processFiles,
+    cleanup,
+  } = useImageOptimization({
+    thumbnailOptions: { maxWidth: 100, maxHeight: 100, quality: 0.6 },
+    useDataURL: true, // Use data URLs to avoid memory leaks
+    maxConcurrent: 5,
+  });
+
+  // Memory monitoring
+  const { memoryInfo, isHighPressure, usagePercent } = useMemoryMonitor();
+
+  // Enable virtualization for large lists
+  useEffect(() => {
+    setUseVirtualization(files.length > 20);
+  }, [files.length]);
+
+  const onDrop = useCallback(async (acceptedFiles: File[], rejectedFiles: any[]) => {
     // Handle rejected files
     const rejectedMessages = rejectedFiles.map(({ file, errors }) => {
       const errorMessages = errors.map((e: any) => e.message).join(', ');
@@ -53,7 +78,7 @@ export default function ImageUpload({
 
     acceptedFiles.forEach((file) => {
       const validation = validateImageFile(file);
-      
+
       if (!validation.valid) {
         errors.push(`${file.name}: ${validation.error}`);
         return;
@@ -63,7 +88,7 @@ export default function ImageUpload({
       const uploadedFile: UploadedFile = {
         file,
         id,
-        preview: URL.createObjectURL(file),
+        // Don't create preview URL immediately - let optimization hook handle it
       };
 
       newFiles.push(uploadedFile);
@@ -78,7 +103,7 @@ export default function ImageUpload({
 
     // Add new files to existing ones
     const updatedFiles = mode === 'single' ? newFiles : [...files, ...newFiles];
-    
+
     // Add errors to files if any
     if (errors.length > 0) {
       console.error('Upload errors:', errors);
@@ -86,7 +111,15 @@ export default function ImageUpload({
     }
 
     onFilesChange(updatedFiles);
-  }, [files, maxFiles, mode, onFilesChange]);
+
+    // Process thumbnails for new files
+    if (newFiles.length > 0) {
+      await processFiles(
+        newFiles.map(f => f.file),
+        newFiles.map(f => f.id)
+      );
+    }
+  }, [files, maxFiles, mode, onFilesChange, processFiles]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -101,30 +134,27 @@ export default function ImageUpload({
   });
 
   const removeFile = useCallback((fileId: string) => {
+    // Cleanup optimized file
+    cleanup(fileId);
+
+    // Remove from file list
     const updatedFiles = files.filter(f => f.id !== fileId);
     onFilesChange(updatedFiles);
-  }, [files, onFilesChange]);
+  }, [files, onFilesChange, cleanup]);
 
   const clearAllFiles = useCallback(() => {
-    // Revoke object URLs to prevent memory leaks
-    files.forEach(file => {
-      if (file.preview) {
-        URL.revokeObjectURL(file.preview);
-      }
-    });
+    // No need to manually revoke URLs - optimization hook handles it
     onFilesChange([]);
-  }, [files, onFilesChange]);
+  }, [onFilesChange]);
 
-  // Cleanup URLs when component unmounts
-  useEffect(() => {
-    return () => {
-      files.forEach(file => {
-        if (file.preview) {
-          URL.revokeObjectURL(file.preview);
-        }
-      });
-    };
-  }, [files]);
+  // Get thumbnails map for file list
+  const thumbnailsMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const [fileId, data] of optimizedFiles.entries()) {
+      map.set(fileId, data.thumbnail);
+    }
+    return map;
+  }, [optimizedFiles]);
 
   // Handle paste events for images
   const handlePaste = useCallback(async (event: ClipboardEvent) => {
@@ -227,6 +257,16 @@ export default function ImageUpload({
                 Supports: JPEG, PNG, BMP, TIFF • Max size: {formatFileSize(maxSize)}
                 {mode === 'batch' && ` • Max ${maxFiles} files`} • Paste with Ctrl+V (⌘+V)
               </p>
+
+              {/* Memory warning */}
+              {isHighPressure && (
+                <div className="mt-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg flex items-center space-x-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                  <p className="text-xs text-amber-800">
+                    High memory usage ({usagePercent.toFixed(0)}%). Consider reducing the number of images.
+                  </p>
+                </div>
+              )}
             </div>
 
             {!disabled && (
@@ -244,12 +284,25 @@ export default function ImageUpload({
         <div className="bg-white/5 backdrop-blur-sm border border-slate-700/30 rounded-xl shadow-lg relative overflow-hidden transition-all duration-300 hover:border-slate-600/50 hover:translate-y-[-2px]">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h4 className="font-medium text-white">
-                Selected Files ({files.length})
-              </h4>
-              
+              <div className="flex items-center space-x-3">
+                <h4 className="font-medium text-white">
+                  Selected Files ({files.length})
+                </h4>
+                {isOptimizing && (
+                  <span className="flex items-center space-x-1 text-xs text-slate-400">
+                    <Zap className="w-3 h-3 animate-pulse" />
+                    <span>Optimizing...</span>
+                  </span>
+                )}
+                {useVirtualization && (
+                  <Badge className="text-xs bg-slate-700 text-slate-300">
+                    Virtualized
+                  </Badge>
+                )}
+              </div>
+
               {files.length > 1 && (
-                <button 
+                <button
                   type="button"
                   onClick={clearAllFiles}
                   className="text-red-400 hover:text-red-300 text-sm font-medium transition-colors"
@@ -259,15 +312,26 @@ export default function ImageUpload({
               )}
             </div>
 
-            <div className="space-y-3">
-              {files.map((uploadedFile) => (
-                <FilePreview 
-                  key={uploadedFile.id}
-                  uploadedFile={uploadedFile}
-                  onRemove={removeFile}
-                />
-              ))}
-            </div>
+            {isOptimizing && files.length > 10 ? (
+              <FileListSkeleton count={Math.min(files.length, 5)} />
+            ) : useVirtualization ? (
+              <VirtualizedFileList
+                files={files}
+                onRemove={removeFile}
+                thumbnails={thumbnailsMap}
+              />
+            ) : (
+              <div className="space-y-3">
+                {files.map((uploadedFile) => (
+                  <FilePreview
+                    key={uploadedFile.id}
+                    uploadedFile={uploadedFile}
+                    onRemove={removeFile}
+                    thumbnail={thumbnailsMap.get(uploadedFile.id)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -279,24 +343,28 @@ export default function ImageUpload({
 interface FilePreviewProps {
   uploadedFile: UploadedFile;
   onRemove: (fileId: string) => void;
+  thumbnail?: string;
 }
 
-function FilePreview({ uploadedFile, onRemove }: FilePreviewProps) {
+const FilePreview = memo(({ uploadedFile, onRemove, thumbnail }: FilePreviewProps) => {
   const { file, id, preview, error } = uploadedFile;
+  const displayThumbnail = thumbnail || preview;
 
   return (
     <div className="flex items-center space-x-4 p-3 bg-slate-800/20 border border-slate-700/30 rounded-lg hover:bg-slate-700/20 transition-all duration-200">
       {/* Thumbnail */}
-      {preview && (
+      {displayThumbnail ? (
         <div className="flex-shrink-0 w-12 h-12 bg-slate-700/50 rounded-lg overflow-hidden border border-slate-600/30">
-          <img 
-            src={preview} 
+          <img
+            src={displayThumbnail}
             alt={file.name}
             className="w-full h-full object-cover"
-            onLoad={() => {
-              // Cleanup function will be handled by parent component
-            }}
+            loading="lazy"
           />
+        </div>
+      ) : (
+        <div className="flex-shrink-0 w-12 h-12 bg-slate-700/50 rounded-lg overflow-hidden border border-slate-600/30 flex items-center justify-center">
+          <FileImage className="w-6 h-6 text-slate-400" />
         </div>
       )}
 
@@ -333,4 +401,6 @@ function FilePreview({ uploadedFile, onRemove }: FilePreviewProps) {
       </button>
     </div>
   );
-}
+});
+
+FilePreview.displayName = 'FilePreview';
