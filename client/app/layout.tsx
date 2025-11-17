@@ -52,6 +52,23 @@ export default function RootLayout({
           position="top-right"
           expand={true}
           richColors
+          closeButton
+          duration={4000}
+          toastOptions={{
+            className: 'sans-clean',
+            style: {
+              fontFamily: 'var(--font-inter)',
+            },
+            success: {
+              duration: 3000,
+            },
+            error: {
+              duration: 5000,
+            },
+            info: {
+              duration: 3000,
+            },
+          }}
         />
       </body>
     </html>

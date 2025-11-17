@@ -74,7 +74,7 @@ export function UploadProgressTracker({ progress, isVisible }: UploadProgressTra
       {/* File Status Summary */}
       <div className="flex gap-4 text-sm">
         <div className="flex items-center gap-2">
-          <CheckCircle className="h-4 w-4 text-green-500" />
+          <CheckCircle className="h-4 w-4 text-black" />
           <span className="text-gray-600">
             Uploaded: <span className="font-medium mono">{progress.uploaded_files}</span>
           </span>
@@ -107,7 +107,7 @@ export function BatchProgressTracker({ progress, isVisible, modelInfo }: BatchPr
   const getStatusIcon = () => {
     switch (progress.status) {
       case 'completed':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
+        return <CheckCircle className="h-5 w-5 text-black" />;
       case 'failed':
         return <XCircle className="h-5 w-5 text-red-500" />;
       case 'processing':
@@ -162,7 +162,7 @@ export function BatchProgressTracker({ progress, isVisible, modelInfo }: BatchPr
             <p className="text-sm text-gray-600">
               Model: <span className="mono font-medium">{modelInfo.name}</span>
               {modelInfo.loaded && (
-                <span className="ml-2 inline-flex items-center gap-1 text-green-600">
+                <span className="ml-2 inline-flex items-center gap-1 text-black">
                   <CheckCircle className="h-3 w-3" />
                   <span className="text-xs">Loaded</span>
                 </span>
@@ -205,12 +205,12 @@ export function BatchProgressTracker({ progress, isVisible, modelInfo }: BatchPr
 
       {/* Image Processing Stats */}
       <div className="grid grid-cols-3 gap-4 mb-4">
-        <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-          <div className="text-xs text-green-700 mb-1">Completed</div>
-          <div className="text-lg font-semibold text-green-800 mono">
+        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+          <div className="text-xs text-gray-700 mb-1">Completed</div>
+          <div className="text-lg font-semibold text-gray-900 mono">
             {progress.completed_images}
           </div>
-          <div className="text-xs text-green-600">
+          <div className="text-xs text-gray-600">
             of {progress.total_images}
           </div>
         </div>
@@ -321,11 +321,11 @@ export function IndividualFileProgress({ progress }: IndividualFileProgressProps
   const getStatusIcon = () => {
     switch (progress.status) {
       case 'uploaded':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-black" />;
       case 'failed':
         return <XCircle className="h-4 w-4 text-red-500" />;
       case 'uploading':
-        return <Upload className="h-4 w-4 text-sky-500 animate-pulse" />;
+        return <Upload className="h-4 w-4 text-black animate-pulse" />;
       default:
         return <Clock className="h-4 w-4 text-gray-400" />;
     }

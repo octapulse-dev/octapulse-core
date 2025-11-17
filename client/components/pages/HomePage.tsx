@@ -2,12 +2,21 @@
 
 import React from 'react';
 import { Fish, BarChart3, Target, Zap, ArrowRight, CheckCircle } from 'lucide-react';
+import { useSystemStatus } from '@/lib/hooks/useSystemStatus';
+import { SystemStatusBanner } from '@/components/system/SystemStatusBanner';
+import { QuickActions } from '@/components/dashboard/QuickActions';
+import { RecentActivity } from '@/components/dashboard/RecentActivity';
 
 interface HomePageProps {
   onNavigateToPhenotyping: () => void;
+  onNavigateToBatch?: () => void;
 }
 
-export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
+export default function HomePage({ onNavigateToPhenotyping, onNavigateToBatch }: HomePageProps) {
+  const { status, refresh } = useSystemStatus({
+    checkOnMount: true,
+    autoRefresh: false
+  });
   const features = [
     {
       icon: Fish,
@@ -47,27 +56,37 @@ export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 py-24">
-          <div className="text-center space-y-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-24">
+          <div className="text-center space-y-6 sm:space-y-8">
             <div className="flex justify-center">
-              <div className="relative w-28 h-28 rounded-2xl bg-black flex items-center justify-center shadow-2xl overflow-hidden">
-                <img src="/octapulse_logo.png" alt="OctaPulse" className="w-16 h-16 object-contain" />
+              <div className="relative w-20 h-20 sm:w-28 sm:h-28 rounded-2xl bg-black flex items-center justify-center shadow-2xl overflow-hidden">
+                <img src="/octapulse_logo.png" alt="OctaPulse" className="w-12 h-12 sm:w-16 sm:h-16 object-contain" />
               </div>
             </div>
-            
-            <div className="space-y-4">
-              <h1 className="text-6xl font-bold text-gray-900 mono-bold tracking-tight">
+
+            <div className="space-y-3 sm:space-y-4">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mono-bold tracking-tight px-4">
                 OctaPulse
               </h1>
-              <p className="text-xl text-gray-700 max-w-2xl mx-auto sans-clean leading-relaxed">
+              <p className="text-lg sm:text-xl text-gray-700 max-w-2xl mx-auto sans-clean leading-relaxed px-4">
                 Professional aquaculture analysis platform for imaging-driven insights
               </p>
             </div>
-            
+
+            {/* System Status Banner */}
+            <div className="max-w-2xl mx-auto px-4">
+              <SystemStatusBanner
+                status={status}
+                onRefresh={refresh}
+                variant="compact"
+              />
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={onNavigateToPhenotyping}
-                className="px-8 py-4 bg-black text-white mono-bold rounded-md hover:bg-neutral-800 transition-colors duration-200 shadow-sm flex items-center justify-center space-x-2"
+                disabled={!status.isOnline || !status.modelLoaded}
+                className="px-8 py-4 bg-black text-white mono-bold rounded-md hover:bg-neutral-800 transition-colors duration-200 shadow-sm flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span>Start Analysis</span>
                 <ArrowRight className="w-5 h-5" />
@@ -80,38 +99,51 @@ export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
         </div>
       </div>
 
+      {/* Quick Actions Dashboard */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+        <QuickActions
+          onNavigateToPhenotyping={onNavigateToPhenotyping}
+          onNavigateToBatch={onNavigateToBatch || onNavigateToPhenotyping}
+        />
+      </div>
+
+      {/* Recent Activity Widget */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-12">
+        <RecentActivity />
+      </div>
+
       {/* Features Grid */}
-      <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="text-center space-y-4 mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mono-bold">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+        <div className="text-center space-y-3 sm:space-y-4 mb-12 sm:mb-16">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mono-bold px-4">
             Advanced Fish Analysis Technology
           </h2>
-          <p className="text-lg text-gray-700 sans-clean">
+          <p className="text-base sm:text-lg text-gray-700 sans-clean px-4">
             Cutting-edge tools for professional aquaculture research and analysis
           </p>
-          <div className="mt-6 flex gap-3 justify-center">
-            <a href="/analytics" className="px-4 py-2 bg-black text-white rounded-md text-sm hover:bg-neutral-800">Analytics</a>
-            <a href="/hardware" className="px-4 py-2 border border-neutral-300 rounded-md text-sm text-neutral-900 hover:bg-neutral-50">Hardware</a>
-            <a href="/system-config" className="px-4 py-2 border border-neutral-300 rounded-md text-sm text-neutral-900 hover:bg-neutral-50">System Config</a>
-            <a href="/settings" className="px-4 py-2 border border-neutral-300 rounded-md text-sm text-neutral-900 hover:bg-neutral-50">Settings</a>
+          <div className="mt-6 flex flex-wrap gap-2 sm:gap-3 justify-center px-4">
+            <a href="/analytics" className="px-3 sm:px-4 py-2 bg-black text-white rounded-md text-sm hover:bg-neutral-800 whitespace-nowrap">Analytics</a>
+            <a href="/hardware" className="px-3 sm:px-4 py-2 border border-neutral-300 rounded-md text-sm text-neutral-900 hover:bg-neutral-50 whitespace-nowrap">Hardware</a>
+            <a href="/system-config" className="px-3 sm:px-4 py-2 border border-neutral-300 rounded-md text-sm text-neutral-900 hover:bg-neutral-50 whitespace-nowrap">System Config</a>
+            <a href="/settings" className="px-3 sm:px-4 py-2 border border-neutral-300 rounded-md text-sm text-neutral-900 hover:bg-neutral-50 whitespace-nowrap">Settings</a>
           </div>
         </div>
         
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
               <div
                 key={index}
-                className="bg-white rounded-xl p-8 border border-neutral-200 hover:border-neutral-300 transition-colors duration-200 hover:shadow-md group"
+                className="bg-white rounded-xl p-6 sm:p-8 border border-neutral-200 hover:border-neutral-300 transition-colors duration-200 hover:shadow-md group"
               >
-                <div className={`w-16 h-16 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center mb-6`}>
-                  <Icon className="w-8 h-8 text-white" />
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center mb-4 sm:mb-6`}>
+                  <Icon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3 mono-bold">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 mono-bold">
                   {feature.title}
                 </h3>
-                <p className="text-gray-700 leading-relaxed sans-clean">
+                <p className="text-sm sm:text-base text-gray-700 leading-relaxed sans-clean">
                   {feature.description}
                 </p>
               </div>
@@ -121,9 +153,9 @@ export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
       </div>
 
       {/* Benefits Section */}
-      <div className="bg-neutral-50 py-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <div className="bg-neutral-50 py-12 sm:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
             <div className="space-y-8">
               <div className="space-y-4">
                 <h2 className="text-3xl font-bold text-gray-900">
@@ -157,15 +189,21 @@ export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
               <div className="bg-white rounded-xl p-8 border border-neutral-200 shadow-sm">
                 <div className="space-y-6">
                   <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center">
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                      status.isOnline && status.modelLoaded ? 'bg-black' : 'bg-gray-400'
+                    }`}>
                       <Fish className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">Analysis Ready</h3>
-                      <p className="text-gray-600 text-sm">System status: Online</p>
+                      <h3 className="font-semibold text-gray-900">
+                        {status.isOnline && status.modelLoaded ? 'Analysis Ready' : 'System Offline'}
+                      </h3>
+                      <p className="text-gray-600 text-sm">
+                        System status: {status.isOnline ? 'Online' : 'Offline'}
+                      </p>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-neutral-50 rounded-xl p-4">
                       <div className="text-2xl font-bold text-gray-900">99.2%</div>
@@ -176,7 +214,9 @@ export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
                       <div className="text-sm text-gray-600">Processing</div>
                     </div>
                     <div className="bg-neutral-50 rounded-xl p-4">
-                      <div className="text-2xl font-bold text-gray-900">YOLOv8</div>
+                      <div className="text-2xl font-bold text-gray-900 mono text-sm">
+                        {status.modelName}
+                      </div>
                       <div className="text-sm text-gray-600">AI Model</div>
                     </div>
                     <div className="bg-neutral-50 rounded-xl p-4">
@@ -192,9 +232,9 @@ export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
       </div>
 
       {/* Call to Action */}
-      <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="bg-black rounded-3xl p-12 text-center text-white">
-          <h2 className="text-3xl font-bold mb-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+        <div className="bg-black rounded-2xl sm:rounded-3xl p-8 sm:p-12 text-center text-white">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4">
             Ready to Analyze Your Fish?
           </h2>
           <p className="text-xl text-neutral-300 mb-8">

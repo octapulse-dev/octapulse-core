@@ -3,10 +3,12 @@
  */
 
 import axios, { AxiosResponse, AxiosError } from 'axios';
-import { 
-  FishAnalysisResult, 
-  BatchAnalysisResult, 
-  UploadResponse, 
+import { logger } from './utils/logger';
+import { formatErrorMessage } from './utils/errorMessages';
+import {
+  FishAnalysisResult,
+  BatchAnalysisResult,
+  UploadResponse,
   BatchUploadResponse,
   ApiError,
   AnalysisConfig,
@@ -36,11 +38,11 @@ const apiClient = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    logger.apiRequest(config.method || 'GET', config.url || '');
     return config;
   },
   (error) => {
-    console.error('API Request Error:', error);
+    logger.apiError(error, 'Request Interceptor');
     return Promise.reject(error);
   }
 );
@@ -48,19 +50,27 @@ apiClient.interceptors.request.use(
 // Response interceptor
 apiClient.interceptors.response.use(
   (response) => {
-    console.log(`API Response: ${response.status} ${response.config.url}`);
+    logger.apiResponse(response.status, response.config.url || '');
     return response;
   },
   (error: AxiosError) => {
-    console.error('API Response Error:', error.response?.data || error.message);
-    
-    // Transform axios errors to our ApiError format
+    logger.apiError(error.response?.data || error.message, 'Response Interceptor');
+
+    // Transform axios errors to our ApiError format with user-friendly messages
     const responseData = error.response?.data as any;
+    const statusCode = error.response?.status;
+
+    // Format the error message to be user-friendly
+    const formattedError = formatErrorMessage(error, {
+      statusCode,
+      detail: responseData?.detail
+    });
+
     const apiError: ApiError = {
-      detail: responseData?.detail || error.message || 'Unknown API error',
-      status_code: error.response?.status
+      detail: formattedError.message + (formattedError.suggestion ? ' ' + formattedError.suggestion : ''),
+      status_code: statusCode
     };
-    
+
     return Promise.reject(apiError);
   }
 );
@@ -157,8 +167,8 @@ export async function startBatchAnalysis(
   config: AnalysisConfig,
   batchId?: string
 ): Promise<{ message: string; batch_id: string; status_check_url: string }> {
-  console.log('🔬 startBatchAnalysis called with', imagePaths.length, 'images, batchId:', batchId);
-  
+  logger.debug('startBatchAnalysis called with', imagePaths.length, 'images, batchId:', batchId);
+
   const payload: any = {
     images: imagePaths,
     grid_square_size_inches: config.gridSquareSize,
@@ -175,11 +185,11 @@ export async function startBatchAnalysis(
     payload.batch_id = batchId;
   }
 
-  console.log('📡 Sending batch analysis request:', payload);
+  logger.debug('Sending batch analysis request:', payload);
   const response = await apiClient.post('/analysis/batch', payload, {
     timeout: 60000, // Reduced to 60 seconds since we'll stream progress
   });
-  console.log('✅ Batch analysis response:', response.data);
+  logger.info('Batch analysis response:', response.data);
   return response.data;
 }
 
@@ -202,19 +212,19 @@ export async function streamBatchProgress(
       onProgress(progress);
 
       if (progress.status === 'completed') {
-        console.log('🎉 Streaming completed, fetching final results...');
+        logger.info('Streaming completed, fetching final results...');
         try {
           const finalResult = await getComprehensiveBatchResults(batchId);
           onComplete?.(finalResult);
         } catch (resultError) {
-          console.error('Failed to fetch final results:', resultError);
+          logger.error('Failed to fetch final results:', resultError);
           onError?.(resultError);
         }
         return;
-      } 
-      
+      }
+
       if (progress.status === 'failed') {
-        console.log('❌ Analysis failed during streaming');
+        logger.warn('Analysis failed during streaming');
         onError?.(new Error('Batch analysis failed'));
         return;
       }
@@ -228,7 +238,7 @@ export async function streamBatchProgress(
       // Continue polling
       setTimeout(poll, pollInterval);
     } catch (error) {
-      console.error('Polling error:', error);
+      logger.error('Polling error:', error);
       attempts++;
       if (attempts >= maxAttempts) {
         onError?.(error);
@@ -339,9 +349,9 @@ export async function uploadBatchImagesEnhanced(
   config: AnalysisConfig,
   onProgress?: (progress: BatchUploadProgress) => void
 ): Promise<BatchUploadResponse> {
-  console.log('📤 uploadBatchImagesEnhanced called with', files.length, 'files');
-  console.log('📝 File details:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
-  console.log('⚙️ Config:', config);
+  logger.debug('uploadBatchImagesEnhanced called with', files.length, 'files');
+  logger.debug('File details:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
+  logger.debug('Config:', config);
   const formData = new FormData();
   const startTime = Date.now();
   let uploadedBytes = 0;
@@ -356,7 +366,7 @@ export async function uploadBatchImagesEnhanced(
   }));
 
   files.forEach((file, index) => {
-    console.log(`📎 Adding file ${index + 1}/${files.length}: ${file.name}`);
+    logger.debug(`Adding file ${index + 1}/${files.length}: ${file.name}`);
     formData.append('files', file);
     fileProgresses[index].status = 'uploading';
   });
@@ -369,7 +379,7 @@ export async function uploadBatchImagesEnhanced(
   formData.append('save_uploads', config.saveUploads.toString());
   formData.append('save_logs', config.saveLogs.toString());
 
-  console.log('🚀 Sending FormData to /upload/batch...');
+  logger.debug('Sending FormData to /upload/batch...');
   try {
     const response: AxiosResponse<BatchUploadResponse> = await apiClient.post(
       '/upload/batch',
@@ -400,11 +410,11 @@ export async function uploadBatchImagesEnhanced(
     }
   );
 
-  console.log('✅ Upload successful:', response.data);
+  logger.info('Upload successful:', response.data);
   return response.data;
-  
+
   } catch (error: any) {
-    console.error('❌ Upload failed:', {
+    logger.error('Upload failed:', {
       error,
       message: error?.message,
       status: error?.response?.status,
@@ -503,39 +513,39 @@ export async function uploadAndAnalyzeBatchEnhanced(
   onAnalysisProgress?: (progress: AnalysisProgress) => void
 ): Promise<ComprehensiveBatchResult> {
   try {
-    console.log('🔄 Phase 1: Starting batch upload...', files.length, 'files');
+    logger.info('Phase 1: Starting batch upload...', files.length, 'files');
     // Phase 1: Upload with detailed progress
     const uploadResult = await uploadBatchImagesEnhanced(files, config, onUploadProgress);
-    console.log('✅ Phase 1 complete: Upload result:', uploadResult);
-    
+    logger.info('Phase 1 complete: Upload result:', uploadResult);
+
     if (!uploadResult.batch_id) {
       throw new Error('Batch upload failed - no batch ID returned');
     }
-    
-    console.log('🔄 Phase 2: Starting batch analysis...');
+
+    logger.info('Phase 2: Starting batch analysis...');
     // Phase 2: Start analysis
     const analysisStartResult = await startBatchAnalysis(
       uploadResult.uploaded_files.map(f => f.file_path),
       config,
       uploadResult.batch_id  // Pass the batch_id from upload
     );
-    console.log('✅ Phase 2 complete: Analysis started:', analysisStartResult);
-    
-    console.log('🔄 Phase 3: Starting streaming progress monitoring...');
+    logger.info('Phase 2 complete: Analysis started:', analysisStartResult);
+
+    logger.info('Phase 3: Starting streaming progress monitoring...');
     // Phase 3: Stream analysis progress
     return new Promise((resolve, reject) => {
       streamBatchProgress(
         uploadResult.batch_id,
         (progress) => {
-          console.log('📈 Streaming progress update:', progress);
+          logger.debug('Streaming progress update:', progress);
           onAnalysisProgress?.(progress);
         },
         (finalResult) => {
-          console.log('✅ Streaming completed with final result:', finalResult);
+          logger.info('Streaming completed with final result:', finalResult);
           resolve(finalResult);
         },
         (error) => {
-          console.error('❌ Streaming failed:', error);
+          logger.error('Streaming failed:', error);
           reject(error);
         }
       );

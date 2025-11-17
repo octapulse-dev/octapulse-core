@@ -10,7 +10,14 @@ import { BatchProgressTracker, UploadProgressTracker } from '@/components/analys
 import { DownloadCenter } from '@/components/analysis/DownloadCenter';
 import { useBatchAnalysis } from '@/lib/hooks/useBatchAnalysis';
 import { perfMonitor } from '@/lib/utils/performance';
-import { 
+import { logger } from '@/lib/utils/logger';
+import { getRecoverySuggestions } from '@/lib/utils/errorMessages';
+import { trackActivity } from '@/lib/utils/activityTracking';
+import {
+  PopulationStatsSkeleton,
+  BatchResultsGridSkeleton
+} from '@/components/ui/SkeletonLoaders';
+import {
   AnalysisConfig as AnalysisConfigType,
   FishAnalysisResult
 } from '@/lib/types';
@@ -78,20 +85,37 @@ export default function BatchAnalysisPage() {
     resetAnalysis = () => {}
   } = useBatchAnalysis({
     onStageChange: (stage) => {
-      console.log('🔄 Stage changed to:', stage);
+      logger.debug('Stage changed to:', stage);
       perfMonitor.mark(`stage-${stage}`);
       if (stage === 'completed') {
         perfMonitor.measure('total-analysis-time', 'stage-uploading');
       }
     },
     onProgress: (uploadProgress, analysisProgress) => {
-      console.log('📈 Progress update:', { uploadProgress, analysisProgress });
+      logger.debug('Progress update:', { uploadProgress, analysisProgress });
     },
     onComplete: (result) => {
-      console.log('✅ Batch analysis completed:', result);
+      logger.info('Batch analysis completed:', result);
+
+      // Track successful batch analysis
+      trackActivity({
+        type: 'batch_analysis',
+        imageCount: result.batch_analysis.total_images,
+        success: true,
+        metadata: {
+          batchId: result.batch_analysis.batch_id
+        }
+      });
     },
     onError: (error) => {
-      console.error('❌ Batch analysis error:', error);
+      logger.error('Batch analysis error:', error);
+
+      // Track failed batch analysis
+      trackActivity({
+        type: 'batch_analysis',
+        imageCount: files.length,
+        success: false
+      });
     }
   });
 
@@ -102,49 +126,49 @@ export default function BatchAnalysisPage() {
 
   // Handle batch analysis with performance monitoring
   const handleBatchAnalysis = async () => {
-    console.log('🚀 handleBatchAnalysis clicked!', { files: files.length, isProcessing, hasFailed });
-    
+    logger.debug('handleBatchAnalysis clicked', { files: files.length, isProcessing, hasFailed });
+
     // Test backend connection first
     try {
-      console.log('🏥 Testing backend connection...');
+      logger.debug('Testing backend connection...');
       const { healthCheck } = await import('@/lib/api');
       const health = await healthCheck();
-      console.log('✅ Backend health check passed:', health);
-      
+      logger.info('Backend health check passed:', health);
+
       // Store model information for progress display
       setModelInfo({
         name: 'Model Loaded',
         loaded: health.model_loaded
       });
     } catch (healthError) {
-      console.error('❌ Backend health check failed:', healthError);
+      logger.error('Backend health check failed:', healthError);
       // Continue anyway, but warn user - still set model info as best guess
       setModelInfo({
         name: 'Model Loaded',
         loaded: false // Unknown, but likely loaded if analysis works
       });
     }
-    
-    console.log('📊 About to call startBatchAnalysis with:', { 
-      filesLength: files.length, 
+
+    logger.debug('About to call startBatchAnalysis with:', {
+      filesLength: files.length,
       config,
       startBatchAnalysisType: typeof startBatchAnalysis,
       startBatchAnalysisExists: !!startBatchAnalysis
     });
-    
+
     if (typeof startBatchAnalysis !== 'function') {
-      console.error('❌ startBatchAnalysis is not a function!', startBatchAnalysis);
+      logger.error('startBatchAnalysis is not a function!', startBatchAnalysis);
       return;
     }
-    
+
     perfMonitor.mark('stage-uploading');
-    
+
     try {
-      console.log('🚀 Calling startBatchAnalysis...');
+      logger.debug('Calling startBatchAnalysis...');
       await startBatchAnalysis(files, config);
-      console.log('✅ startBatchAnalysis call completed');
+      logger.info('startBatchAnalysis call completed');
     } catch (error) {
-      console.error('❌ Error in startBatchAnalysis:', error);
+      logger.error('Error in startBatchAnalysis:', error);
     }
   };
 
@@ -225,17 +249,17 @@ export default function BatchAnalysisPage() {
               <div className="text-sm text-gray-600 mt-1 sans-clean">Total Images</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-emerald-600 mono-bold">{batchResult.batch_analysis.completed_images}</div>
+              <div className="text-3xl font-bold text-gray-900 mono-bold">{batchResult.batch_analysis.completed_images}</div>
               <div className="text-sm text-gray-600 mt-1 sans-clean">Successful</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-sky-600 mono-bold">
+              <div className="text-3xl font-bold text-gray-900 mono-bold">
                 {batchResult.batch_analysis.population_statistics.processing_time_average.toFixed(1)}s
               </div>
               <div className="text-sm text-gray-600 mt-1 sans-clean">Avg Processing</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600 mono-bold">
+              <div className="text-3xl font-bold text-gray-900 mono-bold">
                 {(batchResult.batch_analysis.population_statistics.quality_metrics.average_detection_confidence * 100).toFixed(1)}%
               </div>
               <div className="text-sm text-gray-600 mt-1 sans-clean">Avg Confidence</div>
@@ -274,9 +298,9 @@ export default function BatchAnalysisPage() {
               maxFiles={100}
             />
             {files.length > 0 && files.length < 2 && (
-              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-amber-800 text-sm sans-clean">
-                  <strong>Note:</strong> Batch analysis requires at least 2 images for meaningful population statistics. 
+              <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <p className="text-gray-700 text-sm sans-clean">
+                  <strong>Note:</strong> Batch analysis requires at least 2 images for meaningful population statistics.
                   Current: {files.length} image{files.length !== 1 ? 's' : ''}.
                 </p>
               </div>
@@ -310,8 +334,6 @@ export default function BatchAnalysisPage() {
                   <div className="space-y-4 w-full max-w-md">
                     <button
                       onClick={handleBatchAnalysis}
-                      onMouseDown={() => console.log('🔥 Button mouse down')}
-                      onMouseUp={() => console.log('🔥 Button mouse up')}
                       disabled={files.length < 2 || isProcessing}
                       className={`w-full px-12 py-6 rounded-xl font-bold text-lg transition-all duration-300 mono-bold relative z-10 cursor-pointer ${
                         isProcessing
@@ -338,14 +360,6 @@ export default function BatchAnalysisPage() {
                           <span>Start Batch Analysis</span>
                         </div>
                       )}
-                    </button>
-                    
-                    {/* Test Button for Click Detection */}
-                    <button
-                      onClick={() => console.log('🧪 Test button clicked!')}
-                      className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
-                    >
-                      Test Click (Remove After Debug)
                     </button>
 
                     {/* Cancel Button During Processing */}
@@ -378,7 +392,7 @@ export default function BatchAnalysisPage() {
               />
             ) : (
               <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-500 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto"></div>
                 <p className="mt-2 text-gray-600">Preparing upload...</p>
               </div>
             )}
@@ -397,7 +411,7 @@ export default function BatchAnalysisPage() {
               />
             ) : (
               <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto"></div>
                 <p className="mt-2 text-gray-600">Starting analysis...</p>
               </div>
             )}
@@ -405,7 +419,7 @@ export default function BatchAnalysisPage() {
         )}
 
         {/* Step 5: Population Statistics */}
-        {batchResult && showPopulationStats && (
+        {stage === 'completed' && batchResult && showPopulationStats && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
@@ -424,7 +438,7 @@ export default function BatchAnalysisPage() {
               </div>
             </div>
             <div className="p-6">
-              <PopulationStatisticsDisplay 
+              <PopulationStatisticsDisplay
                 statistics={batchResult.batch_analysis.population_statistics}
                 visualizationUrls={batchResult.batch_analysis.visualization_urls}
               />
@@ -432,15 +446,32 @@ export default function BatchAnalysisPage() {
           </div>
         )}
 
+        {/* Population Statistics Loading */}
+        {stage === 'analyzing' && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                  <Activity className="w-4 h-4 text-gray-600 animate-spin" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 mono-bold">Preparing Population Statistics</h2>
+              </div>
+            </div>
+            <div className="p-6">
+              <PopulationStatsSkeleton />
+            </div>
+          </div>
+        )}
+
         {/* Step 6: Individual Results */}
-        {paginatedResults && (
+        {stage === 'completed' && paginatedResults && (
           <div className="space-y-4">
-            <PaginatedResults 
+            <PaginatedResults
               results={paginatedResults.items}
               isLoading={false}
               onViewResult={(result) => setSelectedResult(result)}
               onDownloadResult={(result) => {
-                console.log('Download result:', result);
+                logger.debug('Download result:', result);
               }}
             />
             {/* Simple pager controls to jump pages */}
@@ -473,6 +504,19 @@ export default function BatchAnalysisPage() {
           </div>
         )}
 
+        {/* Individual Results Loading */}
+        {stage === 'analyzing' && analysisProgress && analysisProgress.progress_percent > 0 && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <Activity className="w-5 h-5 text-gray-600 animate-spin" />
+                <h3 className="text-lg font-semibold text-gray-900 mono-bold">Loading Individual Results</h3>
+              </div>
+              <BatchResultsGridSkeleton count={6} />
+            </div>
+          </div>
+        )}
+
         {/* Error Display */}
         {hasFailed && error && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-6">
@@ -480,15 +524,42 @@ export default function BatchAnalysisPage() {
               <AlertCircle className="w-6 h-6 text-red-600" />
               <h3 className="text-lg font-semibold text-red-800 mono-bold">Analysis Failed</h3>
             </div>
-            <p className="text-red-700 mb-4 sans-clean">{error}</p>
-            {canRetry && (
+
+            {/* Error message */}
+            <div className="mb-4">
+              <p className="text-red-700 font-medium sans-clean mb-2">{error}</p>
+            </div>
+
+            {/* Recovery suggestions */}
+            <div className="mb-4">
+              <p className="text-sm font-semibold text-red-800 mb-2 mono-bold">What you can try:</p>
+              <ul className="space-y-1">
+                {getRecoverySuggestions({ detail: error }).map((suggestion, idx) => (
+                  <li key={idx} className="text-sm text-red-700 flex items-start gap-2 sans-clean">
+                    <span className="text-red-500 mt-0.5">•</span>
+                    <span>{suggestion}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-3">
+              {canRetry && (
+                <button
+                  onClick={handleBatchAnalysis}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium mono-bold"
+                >
+                  Try Again ({retryCount}/{3})
+                </button>
+              )}
               <button
-                onClick={handleBatchAnalysis}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                onClick={handleResetAnalysis}
+                className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium mono-bold"
               >
-                Try Again ({retryCount}/{3})
+                Start Over
               </button>
-            )}
+            </div>
           </div>
         )}
 
@@ -600,8 +671,8 @@ export default function BatchAnalysisPage() {
               </div>
               
               <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto">
-                  <TrendingUp className="w-8 h-8 text-purple-600" />
+                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto">
+                  <TrendingUp className="w-8 h-8 text-black" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mono-bold mb-2">Distribution Analysis</h3>
