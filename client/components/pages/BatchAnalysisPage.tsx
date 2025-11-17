@@ -231,17 +231,17 @@ export default function BatchAnalysisPage() {
               <div className="text-sm text-gray-600 mt-1 sans-clean">Total Images</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-emerald-600 mono-bold">{batchResult.batch_analysis.completed_images}</div>
+              <div className="text-3xl font-bold text-gray-900 mono-bold">{batchResult.batch_analysis.completed_images}</div>
               <div className="text-sm text-gray-600 mt-1 sans-clean">Successful</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-sky-600 mono-bold">
+              <div className="text-3xl font-bold text-gray-900 mono-bold">
                 {batchResult.batch_analysis.population_statistics.processing_time_average.toFixed(1)}s
               </div>
               <div className="text-sm text-gray-600 mt-1 sans-clean">Avg Processing</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600 mono-bold">
+              <div className="text-3xl font-bold text-gray-900 mono-bold">
                 {(batchResult.batch_analysis.population_statistics.quality_metrics.average_detection_confidence * 100).toFixed(1)}%
               </div>
               <div className="text-sm text-gray-600 mt-1 sans-clean">Avg Confidence</div>
@@ -280,9 +280,9 @@ export default function BatchAnalysisPage() {
               maxFiles={100}
             />
             {files.length > 0 && files.length < 2 && (
-              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-amber-800 text-sm sans-clean">
-                  <strong>Note:</strong> Batch analysis requires at least 2 images for meaningful population statistics. 
+              <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <p className="text-gray-700 text-sm sans-clean">
+                  <strong>Note:</strong> Batch analysis requires at least 2 images for meaningful population statistics.
                   Current: {files.length} image{files.length !== 1 ? 's' : ''}.
                 </p>
               </div>
@@ -374,7 +374,7 @@ export default function BatchAnalysisPage() {
               />
             ) : (
               <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-500 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto"></div>
                 <p className="mt-2 text-gray-600">Preparing upload...</p>
               </div>
             )}
@@ -393,7 +393,7 @@ export default function BatchAnalysisPage() {
               />
             ) : (
               <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto"></div>
                 <p className="mt-2 text-gray-600">Starting analysis...</p>
               </div>
             )}
@@ -653,8 +653,8 @@ export default function BatchAnalysisPage() {
               </div>
               
               <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto">
-                  <TrendingUp className="w-8 h-8 text-purple-600" />
+                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto">
+                  <TrendingUp className="w-8 h-8 text-black" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mono-bold mb-2">Distribution Analysis</h3>
