@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import { logger } from '@/lib/utils/logger';
 import { getDisplayError } from '@/lib/utils/errorMessages';
+import { ImageGallerySkeleton, AnalysisResultSkeleton } from '@/components/ui/SkeletonLoaders';
 import ImageUpload, { UploadedFile } from '@/components/upload/ImageUpload';
 import AnalysisConfig from '@/components/analysis/AnalysisConfig';
 import AnalysisResults from '@/components/analysis/AnalysisResults';
@@ -234,7 +235,7 @@ export default function PhenotypingPage() {
           )}
 
           {/* Step 4: Results */}
-          {analysisResult && (
+          {!isAnalyzing && analysisResult && (
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="p-6 border-b border-gray-100">
                 <div className="flex items-center justify-between">
@@ -257,8 +258,8 @@ export default function PhenotypingPage() {
                     <h3 className="text-lg font-semibold text-gray-900 mb-4 mono-bold">Visualizations</h3>
                     <div className="image-gallery">
                       {Object.entries(analysisResult.visualization_paths).map(([type, path]) => (
-                        <div 
-                          key={type} 
+                        <div
+                          key={type}
                           className="image-thumbnail"
                           onClick={() => setSelectedImage({
                             src: `http://localhost:8000/api/v1/analysis/result/${analysisResult.analysis_id}/visualization/${type}`,
@@ -279,6 +280,26 @@ export default function PhenotypingPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Results Loading Skeleton */}
+          {isAnalyzing && analysisProgress >= 60 && (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                    <Activity className="w-4 h-4 text-gray-600 animate-spin" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-900 mono-bold">Preparing Analysis Results</h2>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 mono-bold">Visualizations</h3>
+                  <ImageGallerySkeleton count={2} />
+                </div>
               </div>
             </div>
           )}

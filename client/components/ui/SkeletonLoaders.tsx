@@ -267,6 +267,126 @@ export const DistributionSkeleton = memo(() => {
 DistributionSkeleton.displayName = 'DistributionSkeleton';
 
 /**
+ * Skeleton for population statistics display
+ */
+export const PopulationStatsSkeleton = memo(() => {
+  return (
+    <div className="space-y-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="bg-white border border-gray-200 rounded-lg p-4">
+            <Skeleton width="60%" height="16px" className="mb-2" />
+            <Skeleton width="80px" height="32px" className="mb-1" />
+            <Skeleton width="40%" height="12px" />
+          </div>
+        ))}
+      </div>
+
+      {/* Charts Grid */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <ChartSkeleton height={250} />
+        <ChartSkeleton height={250} />
+      </div>
+    </div>
+  );
+});
+
+PopulationStatsSkeleton.displayName = 'PopulationStatsSkeleton';
+
+/**
+ * Skeleton for batch results grid
+ */
+export const BatchResultsGridSkeleton = memo(({ count = 6 }: { count?: number }) => {
+  return (
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          {/* Image placeholder */}
+          <Skeleton width="100%" height="200px" rounded="rounded-none" />
+
+          {/* Content */}
+          <div className="p-4 space-y-3">
+            <Skeleton width="70%" height="18px" />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Skeleton width="50%" height="12px" className="mb-1" />
+                <Skeleton width="80%" height="16px" />
+              </div>
+              <div>
+                <Skeleton width="50%" height="12px" className="mb-1" />
+                <Skeleton width="80%" height="16px" />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Skeleton width="80px" height="32px" rounded="rounded-lg" />
+              <Skeleton width="80px" height="32px" rounded="rounded-lg" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+});
+
+BatchResultsGridSkeleton.displayName = 'BatchResultsGridSkeleton';
+
+/**
+ * Skeleton for progress tracker
+ */
+export const ProgressTrackerSkeleton = memo(() => {
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <Skeleton width="180px" height="20px" />
+        <Skeleton width="60px" height="24px" rounded="rounded-full" />
+      </div>
+
+      {/* Progress bar */}
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm">
+          <Skeleton width="100px" height="14px" />
+          <Skeleton width="40px" height="14px" />
+        </div>
+        <Skeleton width="100%" height="8px" rounded="rounded-full" />
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4 pt-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="text-center">
+            <Skeleton width="70%" height="12px" className="mb-1 mx-auto" />
+            <Skeleton width="50%" height="20px" className="mx-auto" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+});
+
+ProgressTrackerSkeleton.displayName = 'ProgressTrackerSkeleton';
+
+/**
+ * Skeleton for image gallery
+ */
+export const ImageGallerySkeleton = memo(({ count = 4 }: { count?: number }) => {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
+          <Skeleton width="100%" height="100%" rounded="rounded-none" />
+          <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent">
+            <Skeleton width="60%" height="12px" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+});
+
+ImageGallerySkeleton.displayName = 'ImageGallerySkeleton';
+
+/**
  * Pulse effect wrapper for any content
  */
 export const PulseLoader = memo(({

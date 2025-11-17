@@ -13,6 +13,10 @@ import { perfMonitor } from '@/lib/utils/performance';
 import { logger } from '@/lib/utils/logger';
 import { getRecoverySuggestions } from '@/lib/utils/errorMessages';
 import {
+  PopulationStatsSkeleton,
+  BatchResultsGridSkeleton
+} from '@/components/ui/SkeletonLoaders';
+import {
   AnalysisConfig as AnalysisConfigType,
   FishAnalysisResult
 } from '@/lib/types';
@@ -397,7 +401,7 @@ export default function BatchAnalysisPage() {
         )}
 
         {/* Step 5: Population Statistics */}
-        {batchResult && showPopulationStats && (
+        {stage === 'completed' && batchResult && showPopulationStats && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
@@ -416,7 +420,7 @@ export default function BatchAnalysisPage() {
               </div>
             </div>
             <div className="p-6">
-              <PopulationStatisticsDisplay 
+              <PopulationStatisticsDisplay
                 statistics={batchResult.batch_analysis.population_statistics}
                 visualizationUrls={batchResult.batch_analysis.visualization_urls}
               />
@@ -424,10 +428,27 @@ export default function BatchAnalysisPage() {
           </div>
         )}
 
+        {/* Population Statistics Loading */}
+        {stage === 'analyzing' && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                  <Activity className="w-4 h-4 text-gray-600 animate-spin" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 mono-bold">Preparing Population Statistics</h2>
+              </div>
+            </div>
+            <div className="p-6">
+              <PopulationStatsSkeleton />
+            </div>
+          </div>
+        )}
+
         {/* Step 6: Individual Results */}
-        {paginatedResults && (
+        {stage === 'completed' && paginatedResults && (
           <div className="space-y-4">
-            <PaginatedResults 
+            <PaginatedResults
               results={paginatedResults.items}
               isLoading={false}
               onViewResult={(result) => setSelectedResult(result)}
@@ -461,6 +482,19 @@ export default function BatchAnalysisPage() {
               >
                 Next
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Individual Results Loading */}
+        {stage === 'analyzing' && analysisProgress && analysisProgress.progress_percent > 0 && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <Activity className="w-5 h-5 text-gray-600 animate-spin" />
+                <h3 className="text-lg font-semibold text-gray-900 mono-bold">Loading Individual Results</h3>
+              </div>
+              <BatchResultsGridSkeleton count={6} />
             </div>
           </div>
         )}
