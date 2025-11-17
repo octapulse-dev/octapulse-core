@@ -176,7 +176,7 @@ export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
                       <div className="text-sm text-gray-600">Processing</div>
                     </div>
                     <div className="bg-neutral-50 rounded-xl p-4">
-                      <div className="text-2xl font-bold text-gray-900">YOLOv8</div>
+                      <div className="text-2xl font-bold text-gray-900">Deep Learning</div>
                       <div className="text-sm text-gray-600">AI Model</div>
                     </div>
                     <div className="bg-neutral-50 rounded-xl p-4">
