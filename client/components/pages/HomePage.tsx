@@ -2,12 +2,21 @@
 
 import React from 'react';
 import { Fish, BarChart3, Target, Zap, ArrowRight, CheckCircle } from 'lucide-react';
+import { useSystemStatus } from '@/lib/hooks/useSystemStatus';
+import { SystemStatusBanner } from '@/components/system/SystemStatusBanner';
+import { QuickActions } from '@/components/dashboard/QuickActions';
+import { RecentActivity } from '@/components/dashboard/RecentActivity';
 
 interface HomePageProps {
   onNavigateToPhenotyping: () => void;
+  onNavigateToBatch?: () => void;
 }
 
-export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
+export default function HomePage({ onNavigateToPhenotyping, onNavigateToBatch }: HomePageProps) {
+  const { status, refresh } = useSystemStatus({
+    checkOnMount: true,
+    autoRefresh: false
+  });
   const features = [
     {
       icon: Fish,
@@ -63,11 +72,21 @@ export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
                 Professional aquaculture analysis platform for imaging-driven insights
               </p>
             </div>
-            
+
+            {/* System Status Banner */}
+            <div className="max-w-2xl mx-auto px-4">
+              <SystemStatusBanner
+                status={status}
+                onRefresh={refresh}
+                variant="compact"
+              />
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={onNavigateToPhenotyping}
-                className="px-8 py-4 bg-black text-white mono-bold rounded-md hover:bg-neutral-800 transition-colors duration-200 shadow-sm flex items-center justify-center space-x-2"
+                disabled={!status.isOnline || !status.modelLoaded}
+                className="px-8 py-4 bg-black text-white mono-bold rounded-md hover:bg-neutral-800 transition-colors duration-200 shadow-sm flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span>Start Analysis</span>
                 <ArrowRight className="w-5 h-5" />
@@ -78,6 +97,19 @@ export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Quick Actions Dashboard */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+        <QuickActions
+          onNavigateToPhenotyping={onNavigateToPhenotyping}
+          onNavigateToBatch={onNavigateToBatch || onNavigateToPhenotyping}
+        />
+      </div>
+
+      {/* Recent Activity Widget */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-12">
+        <RecentActivity />
       </div>
 
       {/* Features Grid */}
@@ -157,15 +189,21 @@ export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
               <div className="bg-white rounded-xl p-8 border border-neutral-200 shadow-sm">
                 <div className="space-y-6">
                   <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center">
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                      status.isOnline && status.modelLoaded ? 'bg-black' : 'bg-gray-400'
+                    }`}>
                       <Fish className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">Analysis Ready</h3>
-                      <p className="text-gray-600 text-sm">System status: Online</p>
+                      <h3 className="font-semibold text-gray-900">
+                        {status.isOnline && status.modelLoaded ? 'Analysis Ready' : 'System Offline'}
+                      </h3>
+                      <p className="text-gray-600 text-sm">
+                        System status: {status.isOnline ? 'Online' : 'Offline'}
+                      </p>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-neutral-50 rounded-xl p-4">
                       <div className="text-2xl font-bold text-gray-900">99.2%</div>
@@ -176,7 +214,9 @@ export default function HomePage({ onNavigateToPhenotyping }: HomePageProps) {
                       <div className="text-sm text-gray-600">Processing</div>
                     </div>
                     <div className="bg-neutral-50 rounded-xl p-4">
-                      <div className="text-2xl font-bold text-gray-900">YOLOv8</div>
+                      <div className="text-2xl font-bold text-gray-900 mono text-sm">
+                        {status.modelName}
+                      </div>
                       <div className="text-sm text-gray-600">AI Model</div>
                     </div>
                     <div className="bg-neutral-50 rounded-xl p-4">

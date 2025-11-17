@@ -12,6 +12,7 @@ import { useBatchAnalysis } from '@/lib/hooks/useBatchAnalysis';
 import { perfMonitor } from '@/lib/utils/performance';
 import { logger } from '@/lib/utils/logger';
 import { getRecoverySuggestions } from '@/lib/utils/errorMessages';
+import { trackActivity } from '@/lib/utils/activityTracking';
 import {
   PopulationStatsSkeleton,
   BatchResultsGridSkeleton
@@ -95,9 +96,26 @@ export default function BatchAnalysisPage() {
     },
     onComplete: (result) => {
       logger.info('Batch analysis completed:', result);
+
+      // Track successful batch analysis
+      trackActivity({
+        type: 'batch_analysis',
+        imageCount: result.batch_analysis.total_images,
+        success: true,
+        metadata: {
+          batchId: result.batch_analysis.batch_id
+        }
+      });
     },
     onError: (error) => {
       logger.error('Batch analysis error:', error);
+
+      // Track failed batch analysis
+      trackActivity({
+        type: 'batch_analysis',
+        imageCount: files.length,
+        success: false
+      });
     }
   });
 

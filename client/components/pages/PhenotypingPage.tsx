@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import { logger } from '@/lib/utils/logger';
 import { getDisplayError } from '@/lib/utils/errorMessages';
+import { trackActivity } from '@/lib/utils/activityTracking';
 import { ImageGallerySkeleton, AnalysisResultSkeleton } from '@/components/ui/SkeletonLoaders';
 import ImageUpload, { UploadedFile } from '@/components/upload/ImageUpload';
 import AnalysisConfig from '@/components/analysis/AnalysisConfig';
@@ -78,14 +79,46 @@ export default function PhenotypingPage() {
 
       if (result.status === 'completed') {
         toast.success('Fish analysis completed successfully!');
+
+        // Track successful analysis
+        trackActivity({
+          type: 'single_analysis',
+          imageCount: 1,
+          success: true,
+          metadata: {
+            analysisId: result.analysis_id,
+            fileName: file.name
+          }
+        });
       } else {
         const errorMsg = result.error_message || 'Analysis failed';
         toast.error(errorMsg);
+
+        // Track failed analysis
+        trackActivity({
+          type: 'single_analysis',
+          imageCount: 1,
+          success: false,
+          metadata: {
+            analysisId: result.analysis_id,
+            fileName: file.name
+          }
+        });
       }
     } catch (error: any) {
       logger.error('Analysis error:', error);
       const userFriendlyError = getDisplayError(error, { operation: 'Fish analysis' });
       toast.error(userFriendlyError);
+
+      // Track failed analysis
+      trackActivity({
+        type: 'single_analysis',
+        imageCount: 1,
+        success: false,
+        metadata: {
+          fileName: file.name
+        }
+      });
     } finally {
       setIsAnalyzing(false);
       setCurrentStage('');
