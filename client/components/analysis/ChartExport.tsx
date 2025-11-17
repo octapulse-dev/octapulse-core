@@ -11,7 +11,7 @@ import { Download, FileImage, FileCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ChartExportProps {
-  chartRef: React.RefObject<HTMLDivElement>;
+  chartRef: React.RefObject<HTMLDivElement | null>;
   chartName: string;
   className?: string;
 }
