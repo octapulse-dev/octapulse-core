@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
-import { 
+import { logger } from '@/lib/utils/logger';
+import {
   ComprehensiveBatchResult,
   BatchUploadProgress,
   AnalysisProgress,
@@ -9,10 +10,10 @@ import {
   FishAnalysisResult,
   BatchResultsQuery
 } from '@/lib/types';
-import { 
-  uploadAndAnalyzeBatchEnhanced, 
+import {
+  uploadAndAnalyzeBatchEnhanced,
   getBatchResultsPaginated,
-  cancelBatchAnalysis 
+  cancelBatchAnalysis
 } from '@/lib/api';
 import { UploadedFile } from '@/components/upload/ImageUpload';
 
@@ -84,14 +85,14 @@ export function useBatchAnalysis(options: UseBatchAnalysisOptions = {}) {
     files: UploadedFile[],
     config: AnalysisConfig
   ) => {
-    console.log('🎯 startBatchAnalysis called!', { mounted: isComponentMountedRef.current, filesCount: files.length });
-    
+    logger.debug('startBatchAnalysis called', { mounted: isComponentMountedRef.current, filesCount: files.length });
+
     if (!isComponentMountedRef.current) {
-      console.warn('⚠️ Component not mounted, aborting batch analysis');
+      logger.warn('Component not mounted, aborting batch analysis');
       return;
     }
 
-    console.log('🚀 Starting batch analysis with', files.length, 'files');
+    logger.info('Starting batch analysis with', files.length, 'files');
 
     // Validation
     if (files.length === 0) {
@@ -117,7 +118,7 @@ export function useBatchAnalysis(options: UseBatchAnalysisOptions = {}) {
     abortControllerRef.current = new AbortController();
 
     try {
-      console.log('📤 Starting upload and analysis...', {
+      logger.debug('Starting upload and analysis...', {
         filesCount: files.length,
         config,
         stage
@@ -127,16 +128,16 @@ export function useBatchAnalysis(options: UseBatchAnalysisOptions = {}) {
         config,
         (progress) => {
           if (!isComponentMountedRef.current) return;
-          console.log('📊 Upload progress:', progress.overall_progress + '%');
+          logger.debug('Upload progress:', progress.overall_progress + '%');
           updateProgress(progress, null);
           if (progress.overall_progress >= 100) {
-            console.log('✅ Upload completed, starting analysis...');
+            logger.info('Upload completed, starting analysis...');
             updateStage('analyzing');
           }
         },
         (progress) => {
           if (!isComponentMountedRef.current) return;
-          console.log('🔬 Analysis progress:', progress.progress_percent + '%');
+          logger.debug('Analysis progress:', progress.progress_percent + '%');
           updateProgress(null, progress);
           setCurrentBatchId(progress.batch_id);
         }
@@ -147,18 +148,18 @@ export function useBatchAnalysis(options: UseBatchAnalysisOptions = {}) {
       setBatchResult(result);
       setCurrentBatchId(result.batch_analysis.batch_id);
       updateStage('completed');
-      
+
       // Load first page of results
       try {
         const firstPageResults = await getBatchResultsPaginated(
-          result.batch_analysis.batch_id, 
+          result.batch_analysis.batch_id,
           resultsQuery
         );
         if (isComponentMountedRef.current) {
           setPaginatedResults(firstPageResults);
         }
       } catch (paginationError) {
-        console.warn('Failed to load paginated results:', paginationError);
+        logger.warn('Failed to load paginated results:', paginationError);
         // Don't fail the entire analysis for pagination issues
       }
 
@@ -168,7 +169,7 @@ export function useBatchAnalysis(options: UseBatchAnalysisOptions = {}) {
     } catch (error: any) {
       if (!isComponentMountedRef.current) return;
 
-      console.error('❌ Batch analysis error details:', {
+      logger.error('Batch analysis error details:', {
         error,
         message: error?.message,
         status: error?.status_code,
@@ -219,7 +220,7 @@ export function useBatchAnalysis(options: UseBatchAnalysisOptions = {}) {
         await cancelBatchAnalysis(currentBatchId);
         toast.info('Analysis cancelled successfully');
       } catch (error) {
-        console.warn('Failed to cancel analysis on server:', error);
+        logger.warn('Failed to cancel analysis on server:', error);
       }
     }
 
@@ -232,7 +233,7 @@ export function useBatchAnalysis(options: UseBatchAnalysisOptions = {}) {
   // Load results with error handling
   const loadResults = useCallback(async (query: BatchResultsQuery) => {
     if (!currentBatchId || !isComponentMountedRef.current) return;
-    
+
     try {
       const results = await getBatchResultsPaginated(currentBatchId, query);
       if (isComponentMountedRef.current) {
@@ -240,7 +241,7 @@ export function useBatchAnalysis(options: UseBatchAnalysisOptions = {}) {
         setResultsQuery(query);
       }
     } catch (error: any) {
-      console.error('Failed to load results:', error);
+      logger.error('Failed to load results:', error);
       toast.error('Failed to load results: ' + (error.detail || error.message));
     }
   }, [currentBatchId]);

@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
+import { logger } from '@/lib/utils/logger';
+import { getDisplayError } from '@/lib/utils/errorMessages';
 import ImageUpload, { UploadedFile } from '@/components/upload/ImageUpload';
 import AnalysisConfig from '@/components/analysis/AnalysisConfig';
 import AnalysisResults from '@/components/analysis/AnalysisResults';
@@ -72,15 +74,17 @@ export default function PhenotypingPage() {
       );
 
       setAnalysisResult(result);
-      
+
       if (result.status === 'completed') {
         toast.success('Fish analysis completed successfully!');
       } else {
-        toast.error('Analysis failed: ' + (result.error_message || 'Unknown error'));
+        const errorMsg = result.error_message || 'Analysis failed';
+        toast.error(errorMsg);
       }
     } catch (error: any) {
-      console.error('Analysis error:', error);
-      toast.error('Analysis failed: ' + (error.detail || error.message || 'Unknown error'));
+      logger.error('Analysis error:', error);
+      const userFriendlyError = getDisplayError(error, { operation: 'Fish analysis' });
+      toast.error(userFriendlyError);
     } finally {
       setIsAnalyzing(false);
       setCurrentStage('');

@@ -10,7 +10,9 @@ import { BatchProgressTracker, UploadProgressTracker } from '@/components/analys
 import { DownloadCenter } from '@/components/analysis/DownloadCenter';
 import { useBatchAnalysis } from '@/lib/hooks/useBatchAnalysis';
 import { perfMonitor } from '@/lib/utils/performance';
-import { 
+import { logger } from '@/lib/utils/logger';
+import { getRecoverySuggestions } from '@/lib/utils/errorMessages';
+import {
   AnalysisConfig as AnalysisConfigType,
   FishAnalysisResult
 } from '@/lib/types';
@@ -78,20 +80,20 @@ export default function BatchAnalysisPage() {
     resetAnalysis = () => {}
   } = useBatchAnalysis({
     onStageChange: (stage) => {
-      console.log('🔄 Stage changed to:', stage);
+      logger.debug('Stage changed to:', stage);
       perfMonitor.mark(`stage-${stage}`);
       if (stage === 'completed') {
         perfMonitor.measure('total-analysis-time', 'stage-uploading');
       }
     },
     onProgress: (uploadProgress, analysisProgress) => {
-      console.log('📈 Progress update:', { uploadProgress, analysisProgress });
+      logger.debug('Progress update:', { uploadProgress, analysisProgress });
     },
     onComplete: (result) => {
-      console.log('✅ Batch analysis completed:', result);
+      logger.info('Batch analysis completed:', result);
     },
     onError: (error) => {
-      console.error('❌ Batch analysis error:', error);
+      logger.error('Batch analysis error:', error);
     }
   });
 
@@ -102,49 +104,49 @@ export default function BatchAnalysisPage() {
 
   // Handle batch analysis with performance monitoring
   const handleBatchAnalysis = async () => {
-    console.log('🚀 handleBatchAnalysis clicked!', { files: files.length, isProcessing, hasFailed });
-    
+    logger.debug('handleBatchAnalysis clicked', { files: files.length, isProcessing, hasFailed });
+
     // Test backend connection first
     try {
-      console.log('🏥 Testing backend connection...');
+      logger.debug('Testing backend connection...');
       const { healthCheck } = await import('@/lib/api');
       const health = await healthCheck();
-      console.log('✅ Backend health check passed:', health);
-      
+      logger.info('Backend health check passed:', health);
+
       // Store model information for progress display
       setModelInfo({
         name: 'Model Loaded',
         loaded: health.model_loaded
       });
     } catch (healthError) {
-      console.error('❌ Backend health check failed:', healthError);
+      logger.error('Backend health check failed:', healthError);
       // Continue anyway, but warn user - still set model info as best guess
       setModelInfo({
         name: 'Model Loaded',
         loaded: false // Unknown, but likely loaded if analysis works
       });
     }
-    
-    console.log('📊 About to call startBatchAnalysis with:', { 
-      filesLength: files.length, 
+
+    logger.debug('About to call startBatchAnalysis with:', {
+      filesLength: files.length,
       config,
       startBatchAnalysisType: typeof startBatchAnalysis,
       startBatchAnalysisExists: !!startBatchAnalysis
     });
-    
+
     if (typeof startBatchAnalysis !== 'function') {
-      console.error('❌ startBatchAnalysis is not a function!', startBatchAnalysis);
+      logger.error('startBatchAnalysis is not a function!', startBatchAnalysis);
       return;
     }
-    
+
     perfMonitor.mark('stage-uploading');
-    
+
     try {
-      console.log('🚀 Calling startBatchAnalysis...');
+      logger.debug('Calling startBatchAnalysis...');
       await startBatchAnalysis(files, config);
-      console.log('✅ startBatchAnalysis call completed');
+      logger.info('startBatchAnalysis call completed');
     } catch (error) {
-      console.error('❌ Error in startBatchAnalysis:', error);
+      logger.error('Error in startBatchAnalysis:', error);
     }
   };
 
@@ -310,8 +312,6 @@ export default function BatchAnalysisPage() {
                   <div className="space-y-4 w-full max-w-md">
                     <button
                       onClick={handleBatchAnalysis}
-                      onMouseDown={() => console.log('🔥 Button mouse down')}
-                      onMouseUp={() => console.log('🔥 Button mouse up')}
                       disabled={files.length < 2 || isProcessing}
                       className={`w-full px-12 py-6 rounded-xl font-bold text-lg transition-all duration-300 mono-bold relative z-10 cursor-pointer ${
                         isProcessing
@@ -338,14 +338,6 @@ export default function BatchAnalysisPage() {
                           <span>Start Batch Analysis</span>
                         </div>
                       )}
-                    </button>
-                    
-                    {/* Test Button for Click Detection */}
-                    <button
-                      onClick={() => console.log('🧪 Test button clicked!')}
-                      className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
-                    >
-                      Test Click (Remove After Debug)
                     </button>
 
                     {/* Cancel Button During Processing */}
@@ -440,7 +432,7 @@ export default function BatchAnalysisPage() {
               isLoading={false}
               onViewResult={(result) => setSelectedResult(result)}
               onDownloadResult={(result) => {
-                console.log('Download result:', result);
+                logger.debug('Download result:', result);
               }}
             />
             {/* Simple pager controls to jump pages */}
@@ -480,15 +472,42 @@ export default function BatchAnalysisPage() {
               <AlertCircle className="w-6 h-6 text-red-600" />
               <h3 className="text-lg font-semibold text-red-800 mono-bold">Analysis Failed</h3>
             </div>
-            <p className="text-red-700 mb-4 sans-clean">{error}</p>
-            {canRetry && (
+
+            {/* Error message */}
+            <div className="mb-4">
+              <p className="text-red-700 font-medium sans-clean mb-2">{error}</p>
+            </div>
+
+            {/* Recovery suggestions */}
+            <div className="mb-4">
+              <p className="text-sm font-semibold text-red-800 mb-2 mono-bold">What you can try:</p>
+              <ul className="space-y-1">
+                {getRecoverySuggestions({ detail: error }).map((suggestion, idx) => (
+                  <li key={idx} className="text-sm text-red-700 flex items-start gap-2 sans-clean">
+                    <span className="text-red-500 mt-0.5">•</span>
+                    <span>{suggestion}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-3">
+              {canRetry && (
+                <button
+                  onClick={handleBatchAnalysis}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium mono-bold"
+                >
+                  Try Again ({retryCount}/{3})
+                </button>
+              )}
               <button
-                onClick={handleBatchAnalysis}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                onClick={handleResetAnalysis}
+                className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium mono-bold"
               >
-                Try Again ({retryCount}/{3})
+                Start Over
               </button>
-            )}
+            </div>
           </div>
         )}
 
